@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	fyne.io/fyne/v2 v2.3.1
-	github.com/roffe/gocan v0.0.0-20230225113541-83daa5964287
+	github.com/roffe/gocan v0.0.0-20230225121605-8e9d7645d815
 )
 
 require (
