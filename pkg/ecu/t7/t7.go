@@ -10,7 +10,7 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/roffe/gocan"
-	"github.com/roffe/gocan/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 const (

@@ -11,8 +11,8 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/roffe/gocan"
-	"github.com/roffe/gocan/pkg/model"
 	"github.com/roffe/gocan/pkg/srec"
+	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 var MyBooty = `S00E000004598B4E0A93E8A3FE93738F

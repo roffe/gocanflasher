@@ -6,7 +6,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/roffe/gocan/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 var T7Headers = []model.Header{

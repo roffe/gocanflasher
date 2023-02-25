@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/roffe/gocan/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 func (t *Client) FlashECU(ctx context.Context, bin []byte, callback model.ProgressCallback) error {

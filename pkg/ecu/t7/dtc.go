@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/roffe/gocan/pkg/kwp2000"
-	"github.com/roffe/gocan/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 func (t *Client) ReadDTC(ctx context.Context) ([]model.DTC, error) {

@@ -5,8 +5,8 @@ import (
 	"time"
 
 	"github.com/avast/retry-go"
-	"github.com/roffe/gocan/pkg/ecu/t8sec"
-	"github.com/roffe/gocan/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/ecu/t8sec"
+	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 // Disable normal communication, enter programming mode, and request security access

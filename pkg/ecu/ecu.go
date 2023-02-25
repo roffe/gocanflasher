@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/roffe/gocan"
-	"github.com/roffe/gocan/pkg/ecu/t5"
-	"github.com/roffe/gocan/pkg/ecu/t7"
-	"github.com/roffe/gocan/pkg/ecu/t8"
-	"github.com/roffe/gocan/pkg/ecu/t8mcp"
-	"github.com/roffe/gocan/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/ecu/t5"
+	"github.com/roffe/gocanflasher/pkg/ecu/t7"
+	"github.com/roffe/gocanflasher/pkg/ecu/t8"
+	"github.com/roffe/gocanflasher/pkg/ecu/t8mcp"
+	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 const (

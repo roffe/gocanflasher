@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/roffe/gocan/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 func (t *Client) ReadDTC(ctx context.Context) ([]model.DTC, error) {
@@ -78,11 +78,13 @@ func (t *Client) ReadDTC(ctx context.Context) ([]model.DTC, error) {
 // E1 03 ->
 // 1110 0001 0000 0011
 // 11=U
-//   10=2
-//      0001=1
-//           0000=0
-//                0011=3
-//----------------------
+//
+//	10=2
+//	   0001=1
+//	        0000=0
+//	             0011=3
+//
+// ----------------------
 // U2103
 func getDTCDescription(d []byte) (string, byte, error) {
 	if len(d) != 4 {

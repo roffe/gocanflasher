@@ -11,7 +11,7 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/roffe/gocan"
-	"github.com/roffe/gocan/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 func (t *Client) LoadBinFile(filename string) (int64, []byte, error) {

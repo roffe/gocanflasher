@@ -7,7 +7,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"github.com/roffe/gocan/cmd/goCANFlasher/gui"
+	"github.com/roffe/gocanflasher/gui"
 
 	// Init adapters
 	_ "github.com/roffe/gocan/adapter/j2534"

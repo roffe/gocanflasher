@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/roffe/gocan"
-	"github.com/roffe/gocan/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 var T8Headers = []model.Header{

@@ -3,7 +3,7 @@ package t7
 import (
 	"context"
 
-	"github.com/roffe/gocan/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 // Noop command to satisfy interface

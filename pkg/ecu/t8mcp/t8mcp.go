@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/roffe/gocan"
-	"github.com/roffe/gocan/pkg/legion"
-	"github.com/roffe/gocan/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/legion"
+	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 const (

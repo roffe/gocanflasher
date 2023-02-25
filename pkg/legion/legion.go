@@ -13,7 +13,7 @@ import (
 	"github.com/avast/retry-go"
 	"github.com/roffe/gocan"
 	"github.com/roffe/gocan/pkg/gmlan"
-	"github.com/roffe/gocan/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 var EcuByte_MCP byte = 5

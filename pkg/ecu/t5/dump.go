@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/roffe/gocan/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 func (t *Client) DumpECU(ctx context.Context, callback model.ProgressCallback) ([]byte, error) {

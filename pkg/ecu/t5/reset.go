@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/roffe/gocan"
-	"github.com/roffe/gocan/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 func (t *Client) ResetECU(ctx context.Context, callback model.ProgressCallback) error {
