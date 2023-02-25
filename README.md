@@ -1,6 +1,8 @@
 # goCANFlasher
 
-Trionic 5/7/8 ecu flasher GUI made with Fyne
+![goCANFlasher](gocanflasher.jpg)
+
+Trionic 5/7/8 ecu flasher GUI made with [Fyne.io](https://fyne.io/)
 
 ## Todo
 
