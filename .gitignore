@@ -1,0 +1,14 @@
+*.bin
+*.md5
+*.ram
+*.RAM
+*.exe
+*.zip
+*.rar
+tmp
+tmp/*
+dump
+dump/*
+bin
+bin/*
+canlog.log
