@@ -11,7 +11,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/data/binding"
 	"github.com/roffe/gocan/adapter/j2534"
-	"github.com/roffe/gocan/pkg/ecu"
+	"github.com/roffe/gocanflasher/pkg/ecu"
 	sdialog "github.com/sqweek/dialog"
 	"go.bug.st/serial/enumerator"
 )

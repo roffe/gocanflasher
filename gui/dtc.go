@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/roffe/gocan/pkg/ecu"
+	"github.com/roffe/gocanflasher/pkg/ecu"
 )
 
 func (m *mainWindow) readDTC() {

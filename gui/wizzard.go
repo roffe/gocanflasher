@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	"github.com/roffe/gocan/pkg/ecu"
+	"github.com/roffe/gocanflasher/pkg/ecu"
 )
 
 //go:embed ng900.png

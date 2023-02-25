@@ -13,10 +13,10 @@ import (
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"github.com/roffe/gocan/adapter"
-	"github.com/roffe/gocan/pkg/ecu"
-	"github.com/roffe/gocan/pkg/ecu/t5"
-	"github.com/roffe/gocan/pkg/ecu/t7"
-	"github.com/roffe/gocan/pkg/ecu/t8"
+	"github.com/roffe/gocanflasher/pkg/ecu"
+	"github.com/roffe/gocanflasher/pkg/ecu/t5"
+	"github.com/roffe/gocanflasher/pkg/ecu/t7"
+	"github.com/roffe/gocanflasher/pkg/ecu/t8"
 )
 
 const eas = "KW"

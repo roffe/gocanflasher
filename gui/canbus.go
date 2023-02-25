@@ -8,7 +8,7 @@ import (
 	"github.com/roffe/gocan"
 	"github.com/roffe/gocan/adapter"
 	"github.com/roffe/gocan/adapter/j2534"
-	"github.com/roffe/gocan/pkg/ecu"
+	"github.com/roffe/gocanflasher/pkg/ecu"
 )
 
 func (m *mainWindow) initCAN(ctx context.Context) (*gocan.Client, error) {

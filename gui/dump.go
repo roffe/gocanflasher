@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2"
-	"github.com/roffe/gocan/pkg/ecu"
+	"github.com/roffe/gocanflasher/pkg/ecu"
 	sdialog "github.com/sqweek/dialog"
 )
 
