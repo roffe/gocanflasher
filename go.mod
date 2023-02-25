@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	fyne.io/fyne/v2 v2.3.1
-	github.com/roffe/gocan v0.0.0-20230225112940-90ecd1b82393
+	github.com/roffe/gocan v0.0.0-20230225113541-83daa5964287
 )
 
 require (
@@ -15,7 +15,7 @@ require (
 	github.com/benoitkugler/textlayout v0.3.0 // indirect
 	github.com/creack/goselect v0.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/fatih/color v1.13.0 // indirect
+	github.com/fatih/color v1.14.1 // indirect
 	github.com/fredbi/uri v0.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe // indirect
@@ -29,8 +29,8 @@ require (
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
 	github.com/k0kubun/go-ansi v0.0.0-20180517002512-3bf9e2903213 // indirect
-	github.com/mattn/go-colorable v0.1.12 // indirect
-	github.com/mattn/go-isatty v0.0.14 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
@@ -48,7 +48,7 @@ require (
 	golang.org/x/mobile v0.0.0-20211207041440-4e6c2922fdee // indirect
 	golang.org/x/net v0.0.0-20211118161319-6a13c67c3ce4 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
+	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
