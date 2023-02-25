@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"time"
-
-	"github.com/roffe/gocan/pkg/bar"
 )
 
 func (t *Client) GetSRAMSnapshot(ctx context.Context) ([]byte, error) {
@@ -17,7 +15,7 @@ func (t *Client) GetSRAMSnapshot(ctx context.Context) ([]byte, error) {
 }
 
 func (t *Client) readRAM(ctx context.Context, address, length uint32) ([]byte, error) {
-	bar := bar.New(int(length+0x9), "downloading sram")
+	//bar := bar.New(int(length+0x9), "downloading sram")
 	out := make([]byte, length)
 	address += 5
 	num := length / 6
@@ -36,10 +34,10 @@ func (t *Client) readRAM(ctx context.Context, address, length uint32) ([]byte, e
 			}
 		}
 		address += 6
-		bar.Set(int(address))
+		//	bar.Set(int(address))
 	}
 
-	bar.Finish()
+	//bar.Finish()
 	fmt.Printf(" took: %s\n", time.Since(startTime).Round(time.Millisecond).String())
 	return out, nil
 }
