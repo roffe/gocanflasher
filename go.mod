@@ -48,4 +48,4 @@ require (
 	honnef.co/go/js/dom v0.0.0-20221001195520-26252dedbe70 // indirect
 )
 
-replace github.com/roffe/gocan => C:\Users\flejd\go\src\github.com\roffe\gocan
+//replace github.com/roffe/gocan => C:\Users\flejd\go\src\github.com\roffe\gocan
