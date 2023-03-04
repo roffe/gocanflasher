@@ -10,7 +10,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/data/binding"
-	"github.com/roffe/gocan/adapter/j2534"
+	"github.com/roffe/gocan/adapter/passthru"
 	"github.com/roffe/gocanflasher/pkg/ecu"
 	sdialog "github.com/sqweek/dialog"
 	"go.bug.st/serial/enumerator"
@@ -106,7 +106,7 @@ func (m *mainWindow) listPorts() []string {
 		}
 	}
 
-	dlls := j2534.FindDLLs()
+	dlls := passthru.FindDLLs()
 	for _, dll := range dlls {
 		m.output(fmt.Sprintf("J2534 DLL: %s", dll.Name))
 		//portsList = append(portsList, filepath.Base(dll.FunctionLibrary))

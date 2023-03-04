@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	fyne.io/fyne/v2 v2.3.1
-	github.com/roffe/gocan v0.0.0-20230225121605-8e9d7645d815
+	github.com/roffe/gocan v0.0.0-20230304005230-6bb594a84dc7
 )
 
 require (
@@ -47,3 +47,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	honnef.co/go/js/dom v0.0.0-20221001195520-26252dedbe70 // indirect
 )
+
+replace github.com/roffe/gocan => C:\Users\flejd\go\src\github.com\roffe\gocan

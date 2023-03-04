@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/avast/retry-go"
@@ -16,25 +17,41 @@ import (
 	"github.com/roffe/gocanflasher/pkg/model"
 )
 
-var EcuByte_MCP byte = 5
-var EcuByte_T8 byte = 6
+var (
+	EcuByte_MCP byte = 5
+	EcuByte_T8  byte = 6
+)
 
 type Client struct {
-	c              *gocan.Client
-	defaultTimeout time.Duration
-	legionRunning  bool
-	gm             *gmlan.Client
-	canID          uint32
-	recvID         []uint32
+	c                 *gocan.Client
+	defaultTimeout    time.Duration
+	legionRunning     bool
+	gm                *gmlan.Client
+	canID             uint32
+	recvID            []uint32
+	interFrameLatency uint16
 }
 
 func New(c *gocan.Client, canID uint32, recvID ...uint32) *Client {
+	var ifl uint16 = 0x20
+	switch strings.ToLower(c.Adapter().Name()) {
+	case "tech2":
+		ifl = 580
+	case "just4trionic":
+		ifl = 580
+	case "obdlinksx":
+		ifl = 100
+	case "canusb":
+		ifl = 0x30
+	}
+
 	return &Client{
-		c:              c,
-		defaultTimeout: 150 * time.Millisecond,
-		gm:             gmlan.New(c, canID, recvID...),
-		canID:          canID,
-		recvID:         recvID,
+		c:                 c,
+		defaultTimeout:    150 * time.Millisecond,
+		gm:                gmlan.New(c, canID, recvID...),
+		canID:             canID,
+		recvID:            recvID,
+		interFrameLatency: ifl,
 	}
 }
 
@@ -74,11 +91,11 @@ func (t *Client) UploadBootloader(ctx context.Context, callback model.ProgressCa
 			pp = 0
 		}
 		if err := t.gm.TransferData(ctx, 0x00, 0xF0, startAddress); err != nil {
-			log.Println(err)
+
 			return err
 		}
 		seq = 0x21
-		for j := 0; j < 0x22; j++ {
+		for j := 0; j <= 0x21; j++ {
 			payload := make([]byte, 8)
 			payload[0] = seq
 			for x := 1; x < 8; x++ {
@@ -95,10 +112,12 @@ func (t *Client) UploadBootloader(ctx context.Context, callback model.ProgressCa
 				tt = gocan.ResponseRequired
 			}
 			f := gocan.NewFrame(t.canID, payload, tt)
+			if j == 0x21 {
+				f.SetTimeout(t.defaultTimeout * 4)
+			}
 			if err := t.c.Send(f); err != nil {
 				return err
 			}
-
 			seq++
 			if seq > 0x2F {
 				seq = 0x20
@@ -107,12 +126,14 @@ func (t *Client) UploadBootloader(ctx context.Context, callback model.ProgressCa
 				callback(float64(progress))
 			}
 		}
-		resp, err := t.c.Poll(ctx, t.defaultTimeout, t.recvID...)
+		resp, err := t.c.Poll(ctx, t.defaultTimeout*5, t.recvID...)
 		if err != nil {
+
 			return err
 		}
 		if err := gmlan.CheckErr(resp); err != nil {
 			log.Println(resp.String())
+
 			return err
 		}
 		d := resp.Data()
@@ -197,7 +218,7 @@ func (t *Client) Exit(ctx context.Context) error {
 
 // Set inter frame latency to 0x20(32)
 func (t *Client) EnableHighSpeed(ctx context.Context) error {
-	_, err := t.IDemand(ctx, SetInterFrameLatency, 5)
+	_, err := t.IDemand(ctx, SetInterFrameLatency, t.interFrameLatency)
 	if err != nil {
 		return err
 	}
@@ -342,7 +363,6 @@ func (t *Client) ReadFlash(ctx context.Context, device byte, lastAddress int, z2
 
 	startAddress := 0
 	var blockSize byte = 0x80
-	retries := 0
 	for startAddress < lastAddress && ctx.Err() == nil {
 		if callback != nil {
 			callback(float64(startAddress + int(blockSize) - 1))
@@ -351,24 +371,9 @@ func (t *Client) ReadFlash(ctx context.Context, device byte, lastAddress int, z2
 			func() error {
 				b, blocksToSkip, err := t.ReadDataByLocalIdentifier(ctx, true, device, startAddress, blockSize)
 				if err != nil {
-					// Increase inter frame latency
-					if IsInvalidSequenceError(err) {
-						retries++
-
-						if retries == 3 {
-							r := uint16(retries * 100)
-							if r > 2000 {
-								r = 2000
-							}
-							if _, err2 := t.IDemand(ctx, 0, r); err != nil {
-								return fmt.Errorf("failed to set frame latency: %d, previous error: %v now: %v", r, err, err2)
-							}
-						}
-					}
 					return err
 				}
 				if blocksToSkip > 0 {
-					//callback("Skipping " + strconv.Itoa(blocksToSkip) + " blocks")
 					bufpnt += (blocksToSkip * int(blockSize))
 					startAddress += (blocksToSkip * int(blockSize))
 				} else if len(b) == int(blockSize) {
@@ -382,8 +387,15 @@ func (t *Client) ReadFlash(ctx context.Context, device byte, lastAddress int, z2
 				}
 				return nil
 			},
-			retry.Attempts(3),
+			retry.Attempts(10),
 			retry.Context(ctx),
+			retry.OnRetry(func(n uint, err error) {
+				log.Printf("#%d: %v", n, err)
+				t.interFrameLatency += 100
+				if b, err2 := t.IDemand(ctx, SetInterFrameLatency, t.interFrameLatency); err2 != nil {
+					log.Printf("failed to set frame latency: %d, parent error: %v : %v: resp: %X", t.interFrameLatency, err, err2, b)
+				}
+			}),
 			retry.LastErrorOnly(true),
 		)
 		if err != nil {
@@ -497,6 +509,7 @@ func checkErr(f gocan.CANFrame) error {
 }
 
 func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool, pci byte, address int, length byte) ([]byte, int, error) {
+	//	log.Println("RDBLI")
 	retData := make([]byte, length)
 	payload := []byte{pci, 0x21, length,
 		byte(address >> 24),
@@ -539,24 +552,22 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 		if err := t.c.SendFrame(t.canID, []byte{0x30}, gocan.CANFrameType{Type: 2, Responses: 18}); err != nil {
 			return nil, 0, err
 		}
-		m_nrFrameToReceive := ((length - 4) / 7)
+		var m_nrFrameToReceive = int((length - 4) / 7)
 		if (length-4)%7 > 0 {
 			m_nrFrameToReceive++
 		}
 
 		c := t.c.Subscribe(ctx, t.recvID...)
-
 		for m_nrFrameToReceive > 0 {
 			select {
 			case <-ctx.Done():
 				return nil, 0, ctx.Err()
 			case resp := <-c:
 				d2 := resp.Data()
-
 				if d2[0] != seq {
 					return nil, 0, InvalidSequenceError(fmt.Errorf("received invalid sequenced frame 0x%02X, expected 0x%02X", d2[0], seq))
 				}
-				for i := 1; i < 8; i++ {
+				for i := 1; i < resp.Length(); i++ {
 					if rx_cnt < int(length) {
 						retData[rx_cnt] = d2[i]
 						rx_cnt++
@@ -567,9 +578,8 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 				if seq > 0x2F {
 					seq = 0x20
 				}
-
-			case <-time.After(t.defaultTimeout):
-				return nil, 0, errors.New("timeout waiting for blocks")
+			case <-time.After(t.defaultTimeout * 2):
+				return nil, 0, errors.New("timeout waiting for data")
 			}
 		}
 	} else {

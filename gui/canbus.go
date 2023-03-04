@@ -7,7 +7,7 @@ import (
 
 	"github.com/roffe/gocan"
 	"github.com/roffe/gocan/adapter"
-	"github.com/roffe/gocan/adapter/j2534"
+	"github.com/roffe/gocan/adapter/passthru"
 	"github.com/roffe/gocanflasher/pkg/ecu"
 )
 
@@ -18,7 +18,7 @@ func (m *mainWindow) initCAN(ctx context.Context) (*gocan.Client, error) {
 	port := state.port
 
 	if state.adapter == "J2534" {
-		for _, p := range j2534.FindDLLs() {
+		for _, p := range passthru.FindDLLs() {
 			if p.Name == state.port {
 				port = p.FunctionLibrary
 				break
@@ -33,7 +33,10 @@ func (m *mainWindow) initCAN(ctx context.Context) (*gocan.Client, error) {
 			PortBaudrate: state.portBaudrate,
 			CANRate:      state.canRate,
 			CANFilter:    ecu.CANFilters(state.ecuType),
-			Output:       m.output,
+			OutputFunc:   m.output,
+			ErrorFunc: func(err error) {
+				m.output(fmt.Sprintf("Error: %s", err.Error()))
+			},
 		})
 	if err != nil {
 		return nil, err

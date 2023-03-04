@@ -81,7 +81,9 @@ func createLogList() *widget.List {
 	return widget.NewListWithData(
 		listData,
 		func() fyne.CanvasObject {
-			w := widget.NewLabel("")
+			w := &widget.Label{
+				Wrapping: fyne.TextWrapWord,
+			}
 			w.TextStyle.Monospace = true
 			return w
 		},

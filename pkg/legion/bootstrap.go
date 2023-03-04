@@ -28,7 +28,7 @@ func (t *Client) Alive(ctx context.Context, callback model.ProgressCallback) boo
 		t.legionRunning = true
 		return nil
 	},
-		retry.Attempts(4),
+		retry.Attempts(3),
 		retry.Context(ctx),
 		retry.LastErrorOnly(true),
 	)
