@@ -1,0 +1,8 @@
+Website = "https://hirschmann-koxha.de/"
+
+[Details]
+  Icon = "ECU.png"
+  Name = "goCANFlasher"
+  ID = "com.trionictuning.gcf"
+  Version = "1.0.0"
+  Build = 3

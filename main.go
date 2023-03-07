@@ -8,11 +8,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"github.com/roffe/gocanflasher/gui"
-
-	// Init adapters
-	_ "github.com/roffe/gocan/adapter/j2534"
-	_ "github.com/roffe/gocan/adapter/lawicel"
-	_ "github.com/roffe/gocan/adapter/obdlink"
 )
 
 //go:embed ECU.png
