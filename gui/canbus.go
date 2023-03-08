@@ -13,6 +13,9 @@ import (
 func (m *mainWindow) secondInit(ctx context.Context, port string) (*gocan.Client, error) {
 	startTime := time.Now()
 	m.output("Init adapter")
+	defer func() {
+		m.output(fmt.Sprintf("Done, took: %s", time.Since(startTime).Round(time.Millisecond).String()))
+	}()
 	dev, err := adapter.New(
 		state.adapter,
 		&gocan.AdapterConfig{
@@ -29,12 +32,5 @@ func (m *mainWindow) secondInit(ctx context.Context, port string) (*gocan.Client
 		return nil, err
 	}
 
-	client, err := gocan.New(ctx, dev)
-	if err != nil {
-		return nil, err
-	}
-
-	m.output(fmt.Sprintf("Done, took: %s", time.Since(startTime).Round(time.Millisecond).String()))
-
-	return client, nil
+	return gocan.New(ctx, dev)
 }

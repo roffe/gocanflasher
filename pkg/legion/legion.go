@@ -40,7 +40,7 @@ func New(c *gocan.Client, canID uint32, recvID ...uint32) *Client {
 	case "just4trionic":
 		ifl = 580
 	case "stn":
-		ifl = 100
+		ifl = 32
 	case "canusb":
 		ifl = 0x30
 	}
