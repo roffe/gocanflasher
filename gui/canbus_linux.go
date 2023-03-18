@@ -1,5 +1,11 @@
 package gui
 
+import (
+	"context"
+	"github.com/roffe/gocan"
+)
+
 func (m *mainWindow) initCAN(ctx context.Context) (*gocan.Client, error) {
-	return secondInit(ctx, state.port)
+	port := state.port
+	return m.secondInit(ctx, port)
 }
