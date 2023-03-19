@@ -11,7 +11,6 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/roffe/gocan"
-	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 func (t *Client) LoadBinFile(filename string) (int64, []byte, error) {
@@ -55,29 +54,27 @@ var t7offsets = []struct {
 }
 
 // Flash the ECU
-func (t *Client) FlashECU(ctx context.Context, bin []byte, callback model.ProgressCallback) error {
+func (t *Client) FlashECU(ctx context.Context, bin []byte) error {
 	if bin[0] != 0xFF || bin[1] != 0xFF || bin[2] != 0xEF || bin[3] != 0xFC {
 		return fmt.Errorf("error: bin doesn't appear to be for a Trionic 7 ECU! (%02X%02X%02X%02X)",
 			bin[0], bin[1], bin[2], bin[3])
 	}
 
-	if err := t.DataInitialization(ctx, callback); err != nil {
+	if err := t.DataInitialization(ctx); err != nil {
 		return err
 	}
 
-	ok, err := t.KnockKnock(ctx, callback)
+	ok, err := t.KnockKnock(ctx)
 	if err != nil || !ok {
 		return fmt.Errorf("failed to authenticate: %v", err)
 	}
 
-	if err := t.EraseECU(ctx, callback); err != nil {
+	if err := t.EraseECU(ctx); err != nil {
 		return err
 	}
 
-	if callback != nil {
-		callback(-float64(0x80000))
-		callback("Flashing ECU")
-	}
+	t.cfg.OnProgress(-float64(0x80000))
+	t.cfg.OnMessage("Flashing ECU")
 
 	start := time.Now()
 	for _, o := range t7offsets {
@@ -99,14 +96,10 @@ func (t *Client) FlashECU(ctx context.Context, bin []byte, callback model.Progre
 				}
 				binPos += writeBytes
 				left -= writeBytes
-				if callback != nil {
-					callback(float64(binPos))
-				}
+				t.cfg.OnProgress(float64(binPos))
 				time.Sleep(5 * time.Millisecond)
 			}
-			if callback != nil {
-				callback(float64(binPos))
-			}
+			t.cfg.OnProgress(float64(binPos))
 			return nil
 		},
 			retry.Context(ctx),
@@ -129,9 +122,8 @@ func (t *Client) FlashECU(ctx context.Context, bin []byte, callback model.Progre
 		return errors.New("exit download mode failed")
 	}
 
-	if callback != nil {
-		callback(fmt.Sprintf("Done, took: %s", time.Since(start).Round(time.Second)))
-	}
+	t.cfg.OnMessage(fmt.Sprintf("Done, took: %s", time.Since(start).Round(time.Second)))
+
 	return nil
 }
 

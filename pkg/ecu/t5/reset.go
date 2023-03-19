@@ -7,10 +7,9 @@ import (
 	"time"
 
 	"github.com/roffe/gocan"
-	"github.com/roffe/gocanflasher/pkg/model"
 )
 
-func (t *Client) ResetECU(ctx context.Context, callback model.ProgressCallback) error {
+func (t *Client) ResetECU(ctx context.Context) error {
 	//if !t.bootloaded {
 	//	if err := t.UploadBootLoader(ctx); err != nil {
 	//		return err
@@ -26,8 +25,6 @@ func (t *Client) ResetECU(ctx context.Context, callback model.ProgressCallback) 
 	if data[0] != 0xC2 || data[1] != 0x00 || data[2] != 0x08 {
 		return errors.New("invalid response to reset ECU")
 	}
-	if callback != nil {
-		callback("ECU has been reset")
-	}
+	t.cfg.OnMessage("ECU has been reset")
 	return nil
 }

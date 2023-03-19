@@ -72,18 +72,27 @@ func (m *mainWindow) ecuFlash() {
 		}
 		defer c.Close()
 
-		tr, err := ecu.New(c, state.ecuType)
+		tr, err := ecu.New(c, &ecu.Config{
+			Type:       state.ecuType,
+			OnProgress: m.callback,
+			OnMessage: func(msg string) {
+				m.callback(msg)
+			},
+			OnError: func(err error) {
+				m.callback("Error: " + err.Error())
+			},
+		})
 		if err != nil {
 			m.output(err.Error())
 			return
 		}
 
-		if err := tr.FlashECU(ctx, bin, m.callback); err != nil {
+		if err := tr.FlashECU(ctx, bin); err != nil {
 			m.output(err.Error())
 			return
 		}
 
-		if err := tr.ResetECU(ctx, m.callback); err != nil {
+		if err := tr.ResetECU(ctx); err != nil {
 			m.output(err.Error())
 			return
 		}

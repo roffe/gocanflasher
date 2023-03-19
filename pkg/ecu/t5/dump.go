@@ -6,13 +6,11 @@ import (
 	"fmt"
 	"log"
 	"time"
-
-	"github.com/roffe/gocanflasher/pkg/model"
 )
 
-func (t *Client) DumpECU(ctx context.Context, callback model.ProgressCallback) ([]byte, error) {
+func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
 	if !t.bootloaded {
-		if err := t.UploadBootLoader(ctx, callback); err != nil {
+		if err := t.UploadBootLoader(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -25,10 +23,8 @@ func (t *Client) DumpECU(ctx context.Context, callback model.ProgressCallback) (
 	start := getstartAddress(ecutype)
 	length := 0x80000 - start
 
-	if callback != nil {
-		callback(-float64(length))
-		callback("Dumping ECU")
-	}
+	t.cfg.OnProgress(-float64(length))
+	t.cfg.OnMessage("Dumping ECU")
 
 	buffer := make([]byte, length)
 	startTime := time.Now()
@@ -45,9 +41,7 @@ func (t *Client) DumpECU(ctx context.Context, callback model.ProgressCallback) (
 			progress++
 		}
 		address += 6
-		if callback != nil {
-			callback(float64(progress))
-		}
+		t.cfg.OnProgress(float64(progress))
 	}
 
 	// Get the leftover bytes
@@ -60,15 +54,11 @@ func (t *Client) DumpECU(ctx context.Context, callback model.ProgressCallback) (
 			buffer[length-6+j] = b[j]
 			progress++
 		}
-		if callback != nil {
-			callback(float64(progress))
-		}
+		t.cfg.OnProgress(float64(progress))
 	}
 
-	if callback != nil {
-		callback(float64(length))
-		callback(fmt.Sprintf("Done, took: %s", time.Since(startTime).Round(time.Millisecond).String()))
-	}
+	t.cfg.OnProgress(float64(length))
+	t.cfg.OnMessage(fmt.Sprintf("Done, took: %s", time.Since(startTime).Round(time.Millisecond).String()))
 
 	//fmt.Printf("took: %s\n", time.Since(startTime).Round(time.Millisecond).String())
 

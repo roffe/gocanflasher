@@ -8,9 +8,9 @@ import (
 	"github.com/roffe/gocanflasher/pkg/model"
 )
 
-func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]model.HeaderResult, error) {
+func (t *Client) Info(ctx context.Context) ([]model.HeaderResult, error) {
 	if !t.bootloaded {
-		if err := t.UploadBootLoader(ctx, callback); err != nil {
+		if err := t.UploadBootLoader(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -31,7 +31,7 @@ func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]m
 }
 
 func (t *Client) PrintECUInfo(ctx context.Context) error {
-	res, err := t.Info(ctx, nil)
+	res, err := t.Info(ctx)
 	if err != nil {
 		return err
 	}

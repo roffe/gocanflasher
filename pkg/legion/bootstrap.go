@@ -6,25 +6,21 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/roffe/gocanflasher/pkg/ecu/t8sec"
-	"github.com/roffe/gocanflasher/pkg/model"
 )
 
 // Disable normal communication, enter programming mode, and request security access
 // then upload bootloader and jump to it
 
-func (t *Client) Alive(ctx context.Context, callback model.ProgressCallback) bool {
-	if callback != nil {
-		callback("Checking if Legion is running")
-	}
+func (t *Client) Alive(ctx context.Context) bool {
+
+	t.cfg.OnMessage("Checking if Legion is running")
+
 	err := retry.Do(func() error {
 		err := t.Ping(ctx)
 		if err != nil {
 			return err
 		}
-
-		if callback != nil {
-			callback("Legion is ready")
-		}
+		t.cfg.OnMessage("Legion is ready")
 		t.legionRunning = true
 		return nil
 	},
@@ -35,23 +31,22 @@ func (t *Client) Alive(ctx context.Context, callback model.ProgressCallback) boo
 	return err == nil
 }
 
-func (t *Client) Bootstrap(ctx context.Context, callback model.ProgressCallback) error {
-	if !t.Alive(ctx, callback) {
-		if err := t.bootstrapPreFlight(ctx, callback); err != nil {
+func (t *Client) Bootstrap(ctx context.Context) error {
+	if !t.Alive(ctx) {
+		if err := t.bootstrapPreFlight(ctx); err != nil {
 			return err
 		}
-		if err := t.UploadBootloader(ctx, callback); err != nil {
+		if err := t.UploadBootloader(ctx); err != nil {
 			return err
 		}
 
-		if callback != nil {
-			callback("Starting bootloader")
-		}
+		t.cfg.OnMessage("Starting bootloader")
+
 		if err := t.StartBootloader(ctx, 0x102400); err != nil {
 			return err
 		}
 		time.Sleep(500 * time.Millisecond)
-		t.legionRunning = t.Alive(ctx, callback)
+		t.legionRunning = t.Alive(ctx)
 	}
 
 	if t.legionRunning {
@@ -63,7 +58,7 @@ func (t *Client) Bootstrap(ctx context.Context, callback model.ProgressCallback)
 	return nil
 }
 
-func (t *Client) bootstrapPreFlight(ctx context.Context, callback model.ProgressCallback) error {
+func (t *Client) bootstrapPreFlight(ctx context.Context) error {
 	t.gm.TesterPresentNoResponseAllowed()
 
 	//time.Sleep(50 * time.Millisecond)
@@ -92,9 +87,8 @@ func (t *Client) bootstrapPreFlight(ctx context.Context, callback model.Progress
 
 	t.gm.TesterPresentNoResponseAllowed()
 
-	if callback != nil {
-		callback("Requesting security access")
-	}
+	t.cfg.OnMessage("Requesting security access")
+
 	if err := t.gm.RequestSecurityAccess(ctx, 0x01, 0, t8sec.CalculateAccessKey); err != nil {
 		return err
 	}

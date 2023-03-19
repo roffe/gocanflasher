@@ -8,37 +8,32 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/roffe/gocan"
-	"github.com/roffe/gocanflasher/pkg/model"
 )
 
-func (t *Client) DumpECU(ctx context.Context, callback model.ProgressCallback) ([]byte, error) {
-	ok, err := t.KnockKnock(ctx, callback)
+func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
+	ok, err := t.KnockKnock(ctx)
 	if err != nil || !ok {
 		return nil, fmt.Errorf("failed to authenticate: %v", err)
 	}
-	bin, err := t.readECU(ctx, 0, 0x80000, callback)
+	bin, err := t.readECU(ctx, 0, 0x80000)
 	if err != nil {
 		return nil, err
 	}
 	return bin, nil
 }
 
-func (t *Client) readECU(ctx context.Context, addr, length int, callback model.ProgressCallback) ([]byte, error) {
+func (t *Client) readECU(ctx context.Context, addr, length int) ([]byte, error) {
 	//addr := 0
 	//length := 0x80000
-	if callback != nil {
-		callback(-float64(length))
-		callback("Dumping ECU")
-	}
+	t.cfg.OnProgress(-float64(length))
+	t.cfg.OnMessage("Dumping ECU")
 
 	start := time.Now()
 	var readPos int
 	out := bytes.NewBuffer([]byte{})
 
 	for readPos < length {
-		if callback != nil {
-			callback(float64(out.Len()))
-		}
+		t.cfg.OnProgress(float64(out.Len()))
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
@@ -71,11 +66,8 @@ func (t *Client) readECU(ctx context.Context, addr, length int, callback model.P
 	if err := t.endDownloadMode(ctx); err != nil {
 		return nil, err
 	}
-
-	if callback != nil {
-		callback(float64(out.Len()))
-		callback(fmt.Sprintf("Done, took: %s", time.Since(start).Round(time.Second).String()))
-	}
+	t.cfg.OnProgress(float64(out.Len()))
+	t.cfg.OnMessage(fmt.Sprintf("Done, took: %s", time.Since(start).Round(time.Second).String()))
 
 	return out.Bytes(), nil
 }

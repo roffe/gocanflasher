@@ -60,13 +60,22 @@ func (m *mainWindow) ecuDump() {
 		}
 		defer c.Close()
 
-		tr, err := ecu.New(c, state.ecuType)
+		tr, err := ecu.New(c, &ecu.Config{
+			Type:       state.ecuType,
+			OnProgress: m.callback,
+			OnMessage: func(msg string) {
+				m.callback(msg)
+			},
+			OnError: func(err error) {
+				m.callback("Error: " + err.Error())
+			},
+		})
 		if err != nil {
 			m.output(err.Error())
 			return
 		}
 
-		bin, err := tr.DumpECU(ctx, m.callback)
+		bin, err := tr.DumpECU(ctx)
 		if err == nil {
 			m.app.SendNotification(fyne.NewNotification("", "Dump done"))
 			if err := os.WriteFile(filename, bin, 0644); err == nil {
@@ -78,7 +87,7 @@ func (m *mainWindow) ecuDump() {
 			m.output(err.Error())
 		}
 
-		if err := tr.ResetECU(ctx, m.callback); err != nil {
+		if err := tr.ResetECU(ctx); err != nil {
 			m.output(err.Error())
 		}
 	}()

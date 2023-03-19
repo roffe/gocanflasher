@@ -7,7 +7,12 @@ import (
 	"time"
 
 	"github.com/roffe/gocan"
+	"github.com/roffe/gocanflasher/pkg/ecu"
 )
+
+func init() {
+	ecu.Register(ecu.Trionic5, New)
+}
 
 const (
 	PBusRate = 615.384
@@ -42,11 +47,14 @@ type Client struct {
 	c              *gocan.Client
 	defaultTimeout time.Duration
 	bootloaded     bool
+	//cb             model.ProgressCallback
+	cfg *ecu.Config
 }
 
-func New(c *gocan.Client) *Client {
+func New(c *gocan.Client, cfg *ecu.Config) ecu.Client {
 	t := &Client{
 		c:              c,
+		cfg:            ecu.LoadConfig(cfg),
 		defaultTimeout: 250 * time.Millisecond,
 	}
 	return t

@@ -9,27 +9,22 @@ import (
 	"time"
 
 	"github.com/roffe/gocanflasher/pkg/legion"
-	"github.com/roffe/gocanflasher/pkg/model"
 )
 
-func (t *Client) DumpECU(ctx context.Context, callback model.ProgressCallback) ([]byte, error) {
-	if err := t.legion.Bootstrap(ctx, callback); err != nil {
+func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
+	if err := t.legion.Bootstrap(ctx); err != nil {
 		return nil, err
 	}
 
-	if callback != nil {
-		callback("Dumping ECU")
-	}
+	t.cfg.OnMessage("Dumping ECU")
 	start := time.Now()
 
-	bin, err := t.legion.ReadFlash(ctx, legion.EcuByte_T8, 0x100000, false, callback)
+	bin, err := t.legion.ReadFlash(ctx, legion.EcuByte_T8, 0x100000, false)
 	if err != nil {
 		return nil, err
 	}
 
-	if callback != nil {
-		callback("Verifying md5..")
-	}
+	t.cfg.OnMessage("Verifying md5..")
 
 	ecuMD5bytes, err := t.legion.IDemand(ctx, legion.GetTrionic8MD5, 0x00)
 	if err != nil {
@@ -37,18 +32,14 @@ func (t *Client) DumpECU(ctx context.Context, callback model.ProgressCallback) (
 	}
 	calculatedMD5 := md5.Sum(bin)
 
-	if callback != nil {
-		callback(fmt.Sprintf("Legion MD5 : %X", ecuMD5bytes))
-		callback(fmt.Sprintf("Local MD5  : %X", calculatedMD5))
-	}
+	t.cfg.OnMessage(fmt.Sprintf("Legion MD5 : %X", ecuMD5bytes))
+	t.cfg.OnMessage(fmt.Sprintf("Local MD5  : %X", calculatedMD5))
 
 	if !bytes.Equal(ecuMD5bytes, calculatedMD5[:]) {
 		return nil, errors.New("md5 Verification failed")
 	}
 
-	if callback != nil {
-		callback("Done, took: " + time.Since(start).String())
-	}
+	t.cfg.OnMessage("Done, took: " + time.Since(start).String())
 
 	return bin, nil
 }

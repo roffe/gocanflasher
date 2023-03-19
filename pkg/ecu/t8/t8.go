@@ -8,10 +8,14 @@ import (
 
 	"github.com/roffe/gocan"
 	"github.com/roffe/gocan/pkg/gmlan"
+	"github.com/roffe/gocanflasher/pkg/ecu"
 	"github.com/roffe/gocanflasher/pkg/ecu/t8sec"
 	"github.com/roffe/gocanflasher/pkg/legion"
-	"github.com/roffe/gocanflasher/pkg/model"
 )
+
+func init() {
+	ecu.Register(ecu.Trionic8, New)
+}
 
 const (
 	IBusRate = 47.619
@@ -23,13 +27,15 @@ type Client struct {
 	defaultTimeout time.Duration
 	legion         *legion.Client
 	gm             *gmlan.Client
+	cfg            *ecu.Config
 }
 
-func New(c *gocan.Client) *Client {
+func New(c *gocan.Client, cfg *ecu.Config) ecu.Client {
 	t := &Client{
 		c:              c,
+		cfg:            cfg,
 		defaultTimeout: 150 * time.Millisecond,
-		legion:         legion.New(c, 0x7e0, 0x7e8),
+		legion:         legion.New(c, cfg, 0x7e0, 0x7e8),
 		gm:             gmlan.New(c, 0x7e0, 0x5e8, 0x7e8),
 	}
 	return t
@@ -39,7 +45,7 @@ func (t *Client) PrintECUInfo(ctx context.Context) error {
 	return nil
 }
 
-func (t *Client) ResetECU(ctx context.Context, callback model.ProgressCallback) error {
+func (t *Client) ResetECU(ctx context.Context) error {
 	if t.legion.IsRunning() {
 		if err := t.legion.Exit(ctx); err != nil {
 			return err
@@ -48,11 +54,11 @@ func (t *Client) ResetECU(ctx context.Context, callback model.ProgressCallback) 
 	return nil
 }
 
-func (t *Client) FlashECU(ctx context.Context, bin []byte, callback model.ProgressCallback) error {
+func (t *Client) FlashECU(ctx context.Context, bin []byte) error {
 	return nil
 }
 
-func (t *Client) EraseECU(ctx context.Context, callback model.ProgressCallback) error {
+func (t *Client) EraseECU(ctx context.Context) error {
 	return nil
 }
 

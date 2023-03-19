@@ -32,13 +32,22 @@ func (m *mainWindow) ecuInfo() {
 		}
 		defer c.Close()
 
-		tr, err := ecu.New(c, state.ecuType)
+		tr, err := ecu.New(c, &ecu.Config{
+			Type:       state.ecuType,
+			OnProgress: m.callback,
+			OnMessage: func(msg string) {
+				m.callback(msg)
+			},
+			OnError: func(err error) {
+				m.callback("Error: " + err.Error())
+			},
+		})
 		if err != nil {
 			m.output(err.Error())
 			return
 		}
 
-		val, err := tr.Info(ctx, m.callback)
+		val, err := tr.Info(ctx)
 		if err != nil {
 			m.output(err.Error())
 		}
@@ -47,7 +56,7 @@ func (m *mainWindow) ecuInfo() {
 			m.output(v.String())
 		}
 
-		if err := tr.ResetECU(ctx, m.callback); err != nil {
+		if err := tr.ResetECU(ctx); err != nil {
 			m.output(err.Error())
 			return
 		}

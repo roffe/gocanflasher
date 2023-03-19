@@ -9,9 +9,14 @@ import (
 	"time"
 
 	"github.com/roffe/gocan"
+	"github.com/roffe/gocanflasher/pkg/ecu"
 	"github.com/roffe/gocanflasher/pkg/legion"
 	"github.com/roffe/gocanflasher/pkg/model"
 )
+
+func init() {
+	ecu.Register(ecu.Trionic8MCP, New)
+}
 
 const (
 	IBusRate = 47.619
@@ -22,13 +27,15 @@ type Client struct {
 	c              *gocan.Client
 	defaultTimeout time.Duration
 	legion         *legion.Client
+	cb             model.ProgressCallback
 }
 
-func New(c *gocan.Client) *Client {
+func New(c *gocan.Client, cfg *ecu.Config) ecu.Client {
 	t := &Client{
 		c:              c,
 		defaultTimeout: 150 * time.Millisecond,
-		legion:         legion.New(c, 0x7e0, 0x7e8),
+		legion:         legion.New(c, cfg, 0x7e0, 0x7e8),
+		cb:             cfg.OnProgress,
 	}
 	return t
 }
@@ -37,8 +44,8 @@ func (t *Client) ReadDTC(ctx context.Context) ([]model.DTC, error) {
 	return nil, errors.New("MCP cannot do this")
 }
 
-func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]model.HeaderResult, error) {
-	if err := t.legion.Bootstrap(ctx, callback); err != nil {
+func (t *Client) Info(ctx context.Context) ([]model.HeaderResult, error) {
+	if err := t.legion.Bootstrap(ctx); err != nil {
 		return nil, err
 	}
 
@@ -52,8 +59,8 @@ func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]m
 		return nil, err
 	}
 
-	if callback != nil {
-		callback("MCP Firmware information: " + ver)
+	if t.cb != nil {
+		t.cb("MCP Firmware information: " + ver)
 	}
 
 	return nil, nil
@@ -63,12 +70,12 @@ func (t *Client) PrintECUInfo(ctx context.Context) error {
 	return nil
 }
 
-func (t *Client) FlashECU(ctx context.Context, bin []byte, callback model.ProgressCallback) error {
+func (t *Client) FlashECU(ctx context.Context, bin []byte) error {
 	return nil
 }
 
-func (t *Client) DumpECU(ctx context.Context, callback model.ProgressCallback) ([]byte, error) {
-	if err := t.legion.Bootstrap(ctx, callback); err != nil {
+func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
+	if err := t.legion.Bootstrap(ctx); err != nil {
 		return nil, err
 	}
 
@@ -77,18 +84,18 @@ func (t *Client) DumpECU(ctx context.Context, callback model.ProgressCallback) (
 		return nil, errors.New("failed to start secondary bootloader")
 	}
 
-	if callback != nil {
-		callback("Dumping MCP")
+	if t.cb != nil {
+		t.cb("Dumping MCP")
 	}
 	start := time.Now()
 
-	bin, err := t.legion.ReadFlash(ctx, legion.EcuByte_MCP, 0x40100, false, callback)
+	bin, err := t.legion.ReadFlash(ctx, legion.EcuByte_MCP, 0x40100, false)
 	if err != nil {
 		return nil, err
 	}
 
-	if callback != nil {
-		callback("Verifying md5..")
+	if t.cb != nil {
+		t.cb("Verifying md5..")
 	}
 
 	ecumd5bytes, err := t.legion.IDemand(ctx, legion.GetTrionic8MCPMD5, 0x00)
@@ -97,27 +104,27 @@ func (t *Client) DumpECU(ctx context.Context, callback model.ProgressCallback) (
 	}
 	calculatedMD5 := md5.Sum(bin)
 
-	if callback != nil {
-		callback(fmt.Sprintf("Legion md5 : %X", ecumd5bytes))
-		callback(fmt.Sprintf("Local md5  : %X", calculatedMD5))
+	if t.cb != nil {
+		t.cb(fmt.Sprintf("Legion md5 : %X", ecumd5bytes))
+		t.cb(fmt.Sprintf("Local md5  : %X", calculatedMD5))
 	}
 
 	if !bytes.Equal(ecumd5bytes, calculatedMD5[:]) {
 		return nil, errors.New("md5 Verification failed")
 	}
 
-	if callback != nil {
-		callback("Done, took: " + time.Since(start).String())
+	if t.cb != nil {
+		t.cb("Done, took: " + time.Since(start).String())
 	}
 
 	return bin, nil
 }
 
-func (t *Client) EraseECU(ctx context.Context, callback model.ProgressCallback) error {
+func (t *Client) EraseECU(ctx context.Context) error {
 	return nil
 }
 
-func (t *Client) ResetECU(ctx context.Context, callback model.ProgressCallback) error {
+func (t *Client) ResetECU(ctx context.Context) error {
 	if t.legion.IsRunning() {
 		if err := t.legion.Exit(ctx); err != nil {
 			return err

@@ -14,7 +14,7 @@ import (
 	"github.com/avast/retry-go"
 	"github.com/roffe/gocan"
 	"github.com/roffe/gocan/pkg/gmlan"
-	"github.com/roffe/gocanflasher/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/ecu"
 )
 
 var (
@@ -30,9 +30,10 @@ type Client struct {
 	canID             uint32
 	recvID            []uint32
 	interFrameLatency uint16
+	cfg               *ecu.Config
 }
 
-func New(c *gocan.Client, canID uint32, recvID ...uint32) *Client {
+func New(c *gocan.Client, cfg *ecu.Config, canID uint32, recvID ...uint32) *Client {
 	var ifl uint16 = 0x20
 	switch strings.ToLower(c.Adapter().Name()) {
 	case "tech2":
@@ -52,6 +53,7 @@ func New(c *gocan.Client, canID uint32, recvID ...uint32) *Client {
 		canID:             canID,
 		recvID:            recvID,
 		interFrameLatency: ifl,
+		cfg:               cfg,
 	}
 }
 
@@ -63,7 +65,7 @@ func (t *Client) StartBootloader(ctx context.Context, startAddress uint32) error
 	return t.gm.Execute(ctx, startAddress)
 }
 
-func (t *Client) UploadBootloader(ctx context.Context, callback model.ProgressCallback) error {
+func (t *Client) UploadBootloader(ctx context.Context) error {
 	if err := t.gm.RequestDownload(ctx, false); err != nil {
 		return err
 	}
@@ -73,11 +75,9 @@ func (t *Client) UploadBootloader(ctx context.Context, callback model.ProgressCa
 
 	start := time.Now()
 
-	if callback != nil {
-		callback(-float64(9997))
-		callback(float64(0))
-		callback("Uploading bootloader " + strconv.Itoa(len(bootloaderBytes)) + " bytes")
-	}
+	t.cfg.OnProgress(-float64(9997))
+	t.cfg.OnProgress(float64(0))
+	t.cfg.OnMessage("Uploading bootloader " + strconv.Itoa(len(bootloaderBytes)) + " bytes")
 
 	r := bytes.NewReader(bootloaderBytes)
 	pp := 0
@@ -122,9 +122,7 @@ func (t *Client) UploadBootloader(ctx context.Context, callback model.ProgressCa
 			if seq > 0x2F {
 				seq = 0x20
 			}
-			if callback != nil {
-				callback(float64(progress))
-			}
+			t.cfg.OnProgress(float64(progress))
 		}
 		resp, err := t.c.Poll(ctx, t.defaultTimeout*5, t.recvID...)
 		if err != nil {
@@ -175,10 +173,9 @@ func (t *Client) UploadBootloader(ctx context.Context, callback model.ProgressCa
 	t.gm.TesterPresentNoResponseAllowed()
 
 	startAddress += 0x06
-	if callback != nil {
-		callback(float64(9997))
-		callback(fmt.Sprintf("Done, took: %s", time.Since(start).String()))
-	}
+
+	t.cfg.OnProgress(float64(9997))
+	t.cfg.OnMessage(fmt.Sprintf("Done, took: %s", time.Since(start).String()))
 
 	return nil
 }
@@ -339,9 +336,9 @@ func (t *Client) IDemand(ctx context.Context, command Command, wish uint16) ([]b
 	return out, nil
 }
 
-func (t *Client) ReadFlash(ctx context.Context, device byte, lastAddress int, z22se bool, callback model.ProgressCallback) ([]byte, error) {
+func (t *Client) ReadFlash(ctx context.Context, device byte, lastAddress int, z22se bool) ([]byte, error) {
 	if !t.legionRunning {
-		if err := t.Bootstrap(ctx, callback); err != nil {
+		if err := t.Bootstrap(ctx); err != nil {
 			return nil, err
 		}
 	}
@@ -355,18 +352,14 @@ func (t *Client) ReadFlash(ctx context.Context, device byte, lastAddress int, z2
 		copy(buf[j:], buf[:j])
 	}
 
-	if callback != nil {
-		callback("Downloading " + strconv.Itoa(lastAddress) + " bytes")
-		callback(-float64(lastAddress))
-		callback(float64(0))
-	}
+	t.cfg.OnMessage("Downloading " + strconv.Itoa(lastAddress) + " bytes")
+	t.cfg.OnProgress(-float64(lastAddress))
+	t.cfg.OnProgress(float64(0))
 
 	startAddress := 0
 	var blockSize byte = 0x80
 	for startAddress < lastAddress && ctx.Err() == nil {
-		if callback != nil {
-			callback(float64(startAddress + int(blockSize) - 1))
-		}
+		t.cfg.OnProgress(float64(startAddress + int(blockSize) - 1))
 		err := retry.Do(
 			func() error {
 				b, blocksToSkip, err := t.ReadDataByLocalIdentifier(ctx, true, device, startAddress, blockSize)
@@ -402,9 +395,7 @@ func (t *Client) ReadFlash(ctx context.Context, device byte, lastAddress int, z2
 			return nil, err
 		}
 	}
-	if callback != nil {
-		callback(float64(lastAddress))
-	}
+	t.cfg.OnProgress(float64(lastAddress))
 	return buf, nil
 }
 

@@ -3,13 +3,10 @@ package ecu
 import (
 	"context"
 	"errors"
+	"log"
 	"strings"
 
 	"github.com/roffe/gocan"
-	"github.com/roffe/gocanflasher/pkg/ecu/t5"
-	"github.com/roffe/gocanflasher/pkg/ecu/t7"
-	"github.com/roffe/gocanflasher/pkg/ecu/t8"
-	"github.com/roffe/gocanflasher/pkg/ecu/t8mcp"
 	"github.com/roffe/gocanflasher/pkg/model"
 )
 
@@ -25,11 +22,11 @@ const (
 type Client interface {
 	ReadDTC(context.Context) ([]model.DTC, error)
 	PrintECUInfo(context.Context) error
-	Info(context.Context, model.ProgressCallback) ([]model.HeaderResult, error)
-	DumpECU(context.Context, model.ProgressCallback) ([]byte, error)
-	FlashECU(context.Context, []byte, model.ProgressCallback) error
-	EraseECU(context.Context, model.ProgressCallback) error
-	ResetECU(context.Context, model.ProgressCallback) error
+	Info(context.Context) ([]model.HeaderResult, error)
+	DumpECU(context.Context) ([]byte, error)
+	FlashECU(context.Context, []byte) error
+	EraseECU(context.Context) error
+	ResetECU(context.Context) error
 }
 
 func FromString(s string) Type {
@@ -68,19 +65,68 @@ func (e Type) String() string {
 	}
 }
 
-func New(c *gocan.Client, t Type) (Client, error) {
-	switch t {
-	case Trionic5:
-		return t5.New(c), nil
-	case Trionic7:
-		return t7.New(c), nil
-	case Trionic8:
-		return t8.New(c), nil
-	case Trionic8MCP:
-		return t8mcp.New(c), nil
-	default:
-		return nil, errors.New("unknown ECU")
+type Config struct {
+	Type       Type
+	OnProgress model.ProgressCallback
+	OnError    func(error)
+	OnMessage  func(string)
+}
+
+func onProgress(v interface{}) {
+	log.Println(v)
+}
+
+func LoadConfig(cfg *Config) *Config {
+	if cfg == nil {
+		cfg = &Config{
+			Type: UnknownECU,
+		}
 	}
+
+	if cfg.OnProgress == nil {
+		cfg.OnProgress = onProgress
+	}
+
+	if cfg.OnError == nil {
+		cfg.OnError = func(err error) {
+			log.Println(err)
+		}
+	}
+
+	if cfg.OnMessage == nil {
+		cfg.OnMessage = func(msg string) {
+			log.Println(msg)
+		}
+	}
+
+	return cfg
+}
+
+var ecuMap = map[Type]func(c *gocan.Client, cfg *Config) Client{}
+
+func Register(t Type, f func(c *gocan.Client, cfg *Config) Client) {
+	ecuMap[t] = f
+}
+
+func New(c *gocan.Client, cfg *Config) (Client, error) {
+	if ecu, found := ecuMap[cfg.Type]; found {
+		return ecu(c, cfg), nil
+	}
+	return nil, errors.New("unknown ECU")
+	/*
+		switch cfg.Type {
+		case Trionic5:
+			return t5.New(c, cfg), nil
+		case Trionic7:
+			return t7.New(c, cfg), nil
+		case Trionic8:
+			return t8.New(c, cfg), nil
+		case Trionic8MCP:
+			return t8mcp.New(c, cfg), nil
+		default:
+			return nil, errors.New("unknown ECU")
+		}
+	*/
 }
 
 func CANFilters(t Type) []uint32 {

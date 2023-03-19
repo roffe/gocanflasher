@@ -5,13 +5,11 @@ import (
 	"context"
 	"fmt"
 	"time"
-
-	"github.com/roffe/gocanflasher/pkg/model"
 )
 
-func (t *Client) FlashECU(ctx context.Context, bin []byte, callback model.ProgressCallback) error {
+func (t *Client) FlashECU(ctx context.Context, bin []byte) error {
 	if !t.bootloaded {
-		if err := t.UploadBootLoader(ctx, callback); err != nil {
+		if err := t.UploadBootLoader(ctx); err != nil {
 			return err
 		}
 	}
@@ -24,14 +22,12 @@ func (t *Client) FlashECU(ctx context.Context, bin []byte, callback model.Progre
 
 	start := getstartAddress(ecutype)
 
-	if err := t.EraseECU(ctx, callback); err != nil {
+	if err := t.EraseECU(ctx); err != nil {
 		return err
 	}
 
-	if callback != nil {
-		callback(-float64(len(bin)))
-		callback("Flashing ECU")
-	}
+	t.cfg.OnProgress(-float64(len(bin)))
+	t.cfg.OnMessage("Flashing ECU")
 
 	r := bytes.NewReader(bin)
 	startTime := time.Now()
@@ -75,13 +71,9 @@ func (t *Client) FlashECU(ctx context.Context, bin []byte, callback model.Progre
 		}
 		bytesRead += 0x80
 
-		if callback != nil {
-			callback(float64(bytesRead))
-		}
+		t.cfg.OnProgress(float64(bytesRead))
 	}
 
-	if callback != nil {
-		callback(fmt.Sprintf("Done, took: %s", time.Since(startTime).Round(time.Millisecond).String()))
-	}
+	t.cfg.OnMessage(fmt.Sprintf("Done, took: %s", time.Since(startTime).Round(time.Millisecond).String()))
 	return nil
 }

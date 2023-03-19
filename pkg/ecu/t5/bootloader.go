@@ -11,7 +11,6 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/roffe/gocan"
-	"github.com/roffe/gocanflasher/pkg/model"
 	"github.com/roffe/gocanflasher/pkg/srec"
 )
 
@@ -79,13 +78,11 @@ S10A5764000000000000003A
 S10457EB00B9
 S9035000AC`
 
-func (t *Client) UploadBootLoader(ctx context.Context, callback model.ProgressCallback) error {
+func (t *Client) UploadBootLoader(ctx context.Context) error {
 	start := time.Now()
 
-	if callback != nil {
-		callback(-float64(1884))
-		callback("Uploading bootloader")
-	}
+	t.cfg.OnProgress(-float64(1884))
+	t.cfg.OnMessage("Uploading bootloader")
 
 	sr := srec.NewSrec()
 	r := strings.NewReader(MyBooty)
@@ -158,9 +155,7 @@ func (t *Client) UploadBootLoader(ctx context.Context, callback model.ProgressCa
 				}
 				data := resp.Data()
 				if data[0] == 0x1C && data[1] == 0x01 && data[2] == 0x00 {
-					if callback != nil {
-						callback("Bootloader already running")
-					}
+					t.cfg.OnMessage("Bootloader already running")
 					t.bootloaded = true
 					return nil
 				}
@@ -168,9 +163,7 @@ func (t *Client) UploadBootLoader(ctx context.Context, callback model.ProgressCa
 				if resp.Length() != 8 || data[0] != byte(frameNo*7) || data[1] != 0x00 {
 					return fmt.Errorf("failed to upload bootloader: %X", data)
 				}
-				if callback != nil {
-					callback(progress)
-				}
+				t.cfg.OnProgress(progress)
 				seq += 7
 			}
 
@@ -181,9 +174,7 @@ func (t *Client) UploadBootLoader(ctx context.Context, callback model.ProgressCa
 		}
 	}
 	//fmt.Printf("took: %s\n", time.Since(start).Round(time.Millisecond).String())
-	if callback != nil {
-		callback(fmt.Sprintf("Done, took: %s", time.Since(start).Round(time.Millisecond).String()))
-	}
+	t.cfg.OnMessage(fmt.Sprintf("Done, took: %s", time.Since(start).Round(time.Millisecond).String()))
 	t.bootloaded = true
 	return nil
 }

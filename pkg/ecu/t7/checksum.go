@@ -7,10 +7,8 @@ type checksumArea struct {
 
 func VerifyChecksum(bin []byte) error {
 	var areas []checksumArea
-
 	for i := 0; i < 16; i++ {
 		areas = append(areas, checksumArea{})
 	}
-
 	return nil
 }

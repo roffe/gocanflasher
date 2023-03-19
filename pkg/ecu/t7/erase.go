@@ -7,18 +7,15 @@ import (
 	"time"
 
 	"github.com/roffe/gocan"
-	"github.com/roffe/gocanflasher/pkg/model"
 )
 
-func (t *Client) EraseECU(ctx context.Context, callback model.ProgressCallback) error {
+func (t *Client) EraseECU(ctx context.Context) error {
 	data := make([]byte, 8)
 	eraseMsg := []byte{0x40, 0xA1, 0x02, 0x31, 0x52, 0x00, 0x00, 0x00}
 	confirmMsg := []byte{0x40, 0xA1, 0x01, 0x3E, 0x00, 0x00, 0x00, 0x00}
 
-	if callback != nil {
-		callback(-float64(17))
-		callback("Erasing FLASH")
-	}
+	t.cfg.OnProgress(-float64(17))
+	t.cfg.OnMessage("Erasing FLASH")
 
 	progress := 0
 
@@ -34,9 +31,9 @@ func (t *Client) EraseECU(ctx context.Context, callback model.ProgressCallback) 
 		t.Ack(data[0], gocan.Outgoing)
 		i++
 		progress++
-		if callback != nil {
-			callback(float64(progress))
-		}
+
+		t.cfg.OnProgress(float64(progress))
+
 		time.Sleep(250 * time.Millisecond)
 	}
 	if i > 10 {
@@ -56,9 +53,7 @@ func (t *Client) EraseECU(ctx context.Context, callback model.ProgressCallback) 
 		t.Ack(data[0], gocan.Outgoing)
 		i++
 		progress++
-		if callback != nil {
-			callback(float64(progress))
-		}
+		t.cfg.OnProgress(float64(progress))
 		time.Sleep(250 * time.Millisecond)
 	}
 	// Check to see if erase operation lasted longer than 20 sec...
@@ -77,12 +72,12 @@ func (t *Client) EraseECU(ctx context.Context, callback model.ProgressCallback) 
 		data = f.Data()
 		i++
 		progress++
-		if callback != nil {
-			callback(float64(progress))
-		}
+
+		t.cfg.OnProgress(float64(progress))
+
 	}
 	if i < 10 {
-		callback("Erase done")
+		t.cfg.OnMessage("Erase done")
 		return nil
 	}
 

@@ -75,9 +75,10 @@ func (f *FileHeaderField) Byte() byte {
 
 func (f *FileHeaderField) Date() [5]byte {
 	var ret [5]byte
-	for i := 0; i < len(f.Data); i++ {
-		ret[i] = f.Data[i]
-	}
+	copy(ret[:], f.Data)
+	//for i := 0; i < len(f.Data); i++ {
+	//	ret[i] = f.Data[i]
+	//}
 	return ret
 }
 
@@ -88,27 +89,19 @@ func (f *FileHeaderField) Pretty() string {
 func ReadField(file io.ReadWriteSeeker) (*FileHeaderField, error) {
 	sizeb := make([]byte, 1)
 	file.Read(sizeb)
-
 	file.Seek(-2, io.SeekCurrent)
-
 	idb := make([]byte, 1)
 	file.Read(idb)
-
 	if idb[0] == 0xFF {
 		return &FileHeaderField{
 			ID:     0xFF,
 			Length: 0,
 		}, nil
 	}
-
 	size := int64(sizeb[0])
-
 	data := make([]byte, size)
-
 	file.Seek(-(size + 1), io.SeekCurrent)
-
 	file.Read(data)
-
 	file.Seek(-(size + 1), io.SeekCurrent)
 	fhf := &FileHeaderField{
 		ID:     idb[0],

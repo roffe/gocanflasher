@@ -31,7 +31,10 @@ func (m *mainWindow) readDTC() {
 		}
 		defer c.Close()
 
-		tr, err := ecu.New(c, state.ecuType)
+		tr, err := ecu.New(c, &ecu.Config{
+			Type:       state.ecuType,
+			OnProgress: m.callback,
+		})
 		if err != nil {
 			m.output(err.Error())
 			return

@@ -21,8 +21,8 @@ var T7Headers = []model.Header{
 }
 
 // Print out some Trionic7 info
-func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]model.HeaderResult, error) {
-	if err := t.DataInitialization(ctx, callback); err != nil {
+func (t *Client) Info(ctx context.Context) ([]model.HeaderResult, error) {
+	if err := t.DataInitialization(ctx); err != nil {
 		return nil, err
 	}
 	var out []model.HeaderResult
@@ -42,7 +42,7 @@ func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]m
 }
 
 func (t *Client) PrintECUInfo(ctx context.Context) error {
-	res, err := t.Info(ctx, nil)
+	res, err := t.Info(ctx)
 	if err != nil {
 		return err
 	}

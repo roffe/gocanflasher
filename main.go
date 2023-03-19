@@ -8,6 +8,11 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"github.com/roffe/gocanflasher/gui"
+
+	_ "github.com/roffe/gocanflasher/pkg/ecu/t5"
+	_ "github.com/roffe/gocanflasher/pkg/ecu/t7"
+	_ "github.com/roffe/gocanflasher/pkg/ecu/t8"
+	_ "github.com/roffe/gocanflasher/pkg/ecu/t8mcp"
 )
 
 //go:embed ECU.png

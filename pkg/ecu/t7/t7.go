@@ -10,8 +10,12 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/roffe/gocan"
-	"github.com/roffe/gocanflasher/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/ecu"
 )
+
+func init() {
+	ecu.Register(ecu.Trionic7, New)
+}
 
 const (
 	IBusRate = 47.619
@@ -21,12 +25,14 @@ const (
 type Client struct {
 	c              *gocan.Client
 	defaultTimeout time.Duration
+	cfg            *ecu.Config
 }
 
-func New(c *gocan.Client) *Client {
+func New(c *gocan.Client, cfg *ecu.Config) ecu.Client {
 	t := &Client{
 		c:              c,
 		defaultTimeout: 250 * time.Millisecond,
+		cfg:            cfg,
 	}
 	return t
 }
@@ -39,7 +45,7 @@ func (t *Client) Ack(val byte, typ gocan.CANFrameType) {
 
 var lastDataInitialization time.Time
 
-func (t *Client) DataInitialization(ctx context.Context, callback model.ProgressCallback) error {
+func (t *Client) DataInitialization(ctx context.Context) error {
 	if !lastDataInitialization.IsZero() {
 		if time.Since(lastDataInitialization) < 8*time.Second {
 			return nil
@@ -63,13 +69,11 @@ func (t *Client) DataInitialization(ctx context.Context, callback model.Progress
 		retry.Context(ctx),
 		retry.Attempts(6),
 		retry.OnRetry(func(n uint, err error) {
-			if callback != nil {
-				if n == 0 {
-					callback(err.Error())
-					return
-				}
-				callback(fmt.Sprintf("Retry #%d, %v", n, err))
+			if n == 0 {
+				t.cfg.OnError(err)
+				return
 			}
+			t.cfg.OnMessage(fmt.Sprintf("Retry #%d, %v", n, err))
 		}),
 		retry.LastErrorOnly(true),
 		retry.Delay(250*time.Millisecond),
@@ -137,8 +141,8 @@ func (t *Client) GetHeader(ctx context.Context, id byte) (string, error) {
 	return string(answer), nil
 }
 
-func (t *Client) KnockKnock(ctx context.Context, callback model.ProgressCallback) (bool, error) {
-	if err := t.DataInitialization(ctx, callback); err != nil {
+func (t *Client) KnockKnock(ctx context.Context) (bool, error) {
+	if err := t.DataInitialization(ctx); err != nil {
 		return false, err
 	}
 	for i := 0; i <= 4; i++ {
@@ -150,9 +154,7 @@ func (t *Client) KnockKnock(ctx context.Context, callback model.ProgressCallback
 
 		}
 		if ok {
-			if callback != nil {
-				callback("Security access obtained")
-			}
+			t.cfg.OnMessage("Security access obtained")
 			return true, nil
 		}
 	}

@@ -45,11 +45,9 @@ var T8Headers = []model.Header{
 	//{Desc: "E85", ID: 0x7A, Type: "e85"},
 }
 
-func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]model.HeaderResult, error) {
-	if callback != nil {
-		callback(-float64(len(T8Headers)))
-		callback("Initialize session")
-	}
+func (t *Client) Info(ctx context.Context) ([]model.HeaderResult, error) {
+	t.cfg.OnProgress(-float64(len(T8Headers)))
+	t.cfg.OnMessage("Fetching ECU info")
 
 	//time.Sleep(20 * time.Millisecond)
 
@@ -59,10 +57,6 @@ func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]m
 	//	return nil, err
 	//}
 
-	if callback != nil {
-		callback(-float64(len(T8Headers)))
-		callback("Fetching ECU info")
-	}
 	//n := 0
 	var out []model.HeaderResult
 	for i, h := range T8Headers {
@@ -75,7 +69,7 @@ func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]m
 		case "string":
 			data, err := t.gm.ReadDataByIdentifierString(ctx, h.ID)
 			if err != nil {
-				callback(err.Error())
+				t.cfg.OnError(err)
 				continue
 			}
 			res := model.HeaderResult{
@@ -87,7 +81,7 @@ func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]m
 		case "int64":
 			data, err := t.RequestECUInfoAsInt64(ctx, h.ID)
 			if err != nil {
-				callback(err.Error())
+				t.cfg.OnError(err)
 				continue
 			}
 			res := model.HeaderResult{
@@ -99,7 +93,7 @@ func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]m
 		case "hex":
 			data, err := t.RequestECUInfo(ctx, h.ID)
 			if err != nil {
-				callback(err.Error())
+				t.cfg.OnError(err)
 				continue
 			}
 			res := model.HeaderResult{
@@ -111,7 +105,7 @@ func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]m
 		case "uint32":
 			data, err := t.RequestECUInfoAsUint32(ctx, h.ID)
 			if err != nil {
-				callback(err.Error())
+				t.cfg.OnError(err)
 				continue
 			}
 			res := model.HeaderResult{
@@ -123,7 +117,7 @@ func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]m
 		case "km/h":
 			data, err := t.RequestECUInfo(ctx, h.ID)
 			if err != nil {
-				callback(err.Error())
+				t.cfg.OnError(err)
 				continue
 			}
 			var retval uint32
@@ -141,7 +135,7 @@ func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]m
 		case "oilquality":
 			data, err := t.RequestECUInfoAsUint64(ctx, h.ID)
 			if err != nil {
-				callback(err.Error())
+				t.cfg.OnError(err)
 				continue
 			}
 			quality := float64(data) / 256
@@ -155,7 +149,7 @@ func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]m
 		case "ddi":
 			data, err := t.RequestECUInfo(ctx, h.ID)
 			if err != nil {
-				callback(err.Error())
+				t.cfg.OnError(err)
 				continue
 			}
 			var retval string
@@ -171,7 +165,7 @@ func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]m
 		case "e85":
 			data, err := t.gm.ReadDataByPacketIdentifier(ctx, 0x01, 0x7A)
 			if err != nil && err.Error() != "Request out of range or session dropped" {
-				callback(err.Error())
+				t.cfg.OnError(err)
 				continue
 			}
 			if len(data) == 2 {
@@ -191,9 +185,7 @@ func (t *Client) Info(ctx context.Context, callback model.ProgressCallback) ([]m
 				out = append(out, res)
 			}
 		}
-		if callback != nil {
-			callback(float64(i + 1))
-		}
+		t.cfg.OnProgress(float64(i + 1))
 	}
 
 	return out, nil
