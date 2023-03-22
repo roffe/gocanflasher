@@ -33,7 +33,7 @@ func (m *mainWindow) readDTC() {
 
 		tr, err := ecu.New(c, &ecu.Config{
 			Type:       state.ecuType,
-			OnProgress: m.callback,
+			OnProgress: m.progress,
 		})
 		if err != nil {
 			m.output(err.Error())
@@ -42,19 +42,19 @@ func (m *mainWindow) readDTC() {
 
 		dtcs, err := tr.ReadDTC(ctx)
 		if err != nil {
-			m.callback(err.Error())
+			m.output(err.Error())
 			return
 
 		}
 
 		if len(dtcs) == 0 {
-			m.callback("No DTC's")
+			m.output("No DTC's")
 		} else {
-			m.callback("Detected DTC's:")
+			m.output("Detected DTC's:")
 		}
 
 		for i, dtc := range dtcs {
-			m.callback(fmt.Sprintf("#%d %s", i, dtc.String()))
+			m.output(fmt.Sprintf("#%d %s", i, dtc.String()))
 		}
 
 	}()

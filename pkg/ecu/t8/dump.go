@@ -32,7 +32,7 @@ func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
 	}
 	calculatedMD5 := md5.Sum(bin)
 
-	t.cfg.OnMessage(fmt.Sprintf("Legion MD5 : %X", ecuMD5bytes))
+	t.cfg.OnMessage(fmt.Sprintf("Remote MD5 : %X", ecuMD5bytes))
 	t.cfg.OnMessage(fmt.Sprintf("Local MD5  : %X", calculatedMD5))
 
 	if !bytes.Equal(ecuMD5bytes, calculatedMD5[:]) {

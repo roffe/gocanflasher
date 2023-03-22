@@ -2,7 +2,6 @@ package gui
 
 import (
 	"context"
-	"math"
 	"os"
 	"strings"
 	"time"
@@ -62,13 +61,9 @@ func (m *mainWindow) ecuDump() {
 
 		tr, err := ecu.New(c, &ecu.Config{
 			Type:       state.ecuType,
-			OnProgress: m.callback,
-			OnMessage: func(msg string) {
-				m.callback(msg)
-			},
-			OnError: func(err error) {
-				m.callback("Error: " + err.Error())
-			},
+			OnProgress: m.progress,
+			OnMessage:  m.output,
+			OnError:    m.error,
 		})
 		if err != nil {
 			m.output(err.Error())
@@ -94,19 +89,3 @@ func (m *mainWindow) ecuDump() {
 }
 
 var ter = "KE"
-
-func (m *mainWindow) callback(v interface{}) {
-	switch t := v.(type) {
-	case string:
-		m.output(t)
-	case float64:
-		if t < 0 {
-			m.progressBar.Max = math.Abs(t)
-			m.progressBar.SetValue(0)
-			return
-		}
-		m.progressBar.SetValue(t)
-	default:
-		panic("invalid callback type")
-	}
-}

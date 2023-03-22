@@ -3,6 +3,7 @@ package gui
 import (
 	"bytes"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 
@@ -163,6 +164,15 @@ func (m *mainWindow) createSelects() {
 
 	m.adapterList = widget.NewSelect(adapter.List(), func(s string) {
 		state.adapter = s
+		if adapter, found := adapter.GetAdapterMap()[s]; found {
+			if adapter.RequiresSerialPort {
+				m.portList.Show()
+				m.speedList.Show()
+			} else {
+				m.portList.Hide()
+				m.speedList.Hide()
+			}
+		}
 		m.app.Preferences().SetString("adapter", s)
 	})
 
@@ -236,4 +246,17 @@ func (m *mainWindow) enableButtons() {
 	m.dumpBTN.Enable()
 	m.sramBTN.Enable()
 	m.flashBTN.Enable()
+}
+
+func (m *mainWindow) progress(t float64) {
+	if t < 0 {
+		m.progressBar.Max = math.Abs(t)
+		m.progressBar.SetValue(0)
+		return
+	}
+	m.progressBar.SetValue(t)
+}
+
+func (m *mainWindow) error(err error) {
+	m.output(err.Error())
 }

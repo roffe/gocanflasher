@@ -10,7 +10,7 @@ import (
 	"github.com/roffe/gocanflasher/pkg/ecu"
 )
 
-func (m *mainWindow) secondInit(ctx context.Context, port string) (*gocan.Client, error) {
+func (m *mainWindow) initCAN(ctx context.Context) (*gocan.Client, error) {
 	startTime := time.Now()
 	m.output("Init adapter")
 	defer func() {
@@ -19,12 +19,12 @@ func (m *mainWindow) secondInit(ctx context.Context, port string) (*gocan.Client
 	dev, err := adapter.New(
 		state.adapter,
 		&gocan.AdapterConfig{
-			Port:         port,
+			Port:         state.port,
 			PortBaudrate: state.portBaudrate,
 			CANRate:      state.canRate,
 			CANFilter:    ecu.CANFilters(state.ecuType),
-			OutputFunc:   m.output,
-			ErrorFunc: func(err error) {
+			OnMessage:    m.output,
+			OnError: func(err error) {
 				m.output(fmt.Sprintf("Error: %s", err.Error()))
 			},
 		})

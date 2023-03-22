@@ -33,7 +33,7 @@ type Client struct {
 func New(c *gocan.Client, cfg *ecu.Config) ecu.Client {
 	t := &Client{
 		c:              c,
-		cfg:            cfg,
+		cfg:            ecu.LoadConfig(cfg),
 		defaultTimeout: 150 * time.Millisecond,
 		legion:         legion.New(c, cfg, 0x7e0, 0x7e8),
 		gm:             gmlan.New(c, 0x7e0, 0x5e8, 0x7e8),

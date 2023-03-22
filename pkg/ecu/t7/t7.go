@@ -31,8 +31,8 @@ type Client struct {
 func New(c *gocan.Client, cfg *ecu.Config) ecu.Client {
 	t := &Client{
 		c:              c,
+		cfg:            ecu.LoadConfig(cfg),
 		defaultTimeout: 250 * time.Millisecond,
-		cfg:            cfg,
 	}
 	return t
 }

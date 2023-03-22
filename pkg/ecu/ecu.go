@@ -67,13 +67,9 @@ func (e Type) String() string {
 
 type Config struct {
 	Type       Type
-	OnProgress model.ProgressCallback
+	OnProgress func(float64)
 	OnError    func(error)
 	OnMessage  func(string)
-}
-
-func onProgress(v interface{}) {
-	log.Println(v)
 }
 
 func LoadConfig(cfg *Config) *Config {
@@ -84,7 +80,9 @@ func LoadConfig(cfg *Config) *Config {
 	}
 
 	if cfg.OnProgress == nil {
-		cfg.OnProgress = onProgress
+		cfg.OnProgress = func(f float64) {
+			log.Println(f)
+		}
 	}
 
 	if cfg.OnError == nil {

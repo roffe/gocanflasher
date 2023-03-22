@@ -53,7 +53,7 @@ func New(c *gocan.Client, cfg *ecu.Config, canID uint32, recvID ...uint32) *Clie
 		canID:             canID,
 		recvID:            recvID,
 		interFrameLatency: ifl,
-		cfg:               cfg,
+		cfg:               ecu.LoadConfig(cfg),
 	}
 }
 
@@ -342,7 +342,6 @@ func (t *Client) ReadFlash(ctx context.Context, device byte, lastAddress int, z2
 			return nil, err
 		}
 	}
-
 	buf := make([]byte, lastAddress)
 	bufpnt := 0
 
@@ -356,25 +355,20 @@ func (t *Client) ReadFlash(ctx context.Context, device byte, lastAddress int, z2
 	t.cfg.OnProgress(-float64(lastAddress))
 	t.cfg.OnProgress(float64(0))
 
-	startAddress := 0
 	var blockSize byte = 0x80
-	for startAddress < lastAddress && ctx.Err() == nil {
-		t.cfg.OnProgress(float64(startAddress + int(blockSize) - 1))
+	for bufpnt < lastAddress && ctx.Err() == nil {
+		t.cfg.OnProgress(float64(bufpnt + int(blockSize) - 1))
 		err := retry.Do(
 			func() error {
-				b, blocksToSkip, err := t.ReadDataByLocalIdentifier(ctx, true, device, startAddress, blockSize)
+				b, blocksToSkip, err := t.ReadDataByLocalIdentifier(ctx, true, device, bufpnt, blockSize)
 				if err != nil {
 					return err
 				}
 				if blocksToSkip > 0 {
 					bufpnt += (blocksToSkip * int(blockSize))
-					startAddress += (blocksToSkip * int(blockSize))
 				} else if len(b) == int(blockSize) {
-					for j := 0; j < int(blockSize); j++ {
-						buf[bufpnt] = b[j]
-						bufpnt++
-					}
-					startAddress += int(blockSize)
+					copy(buf[bufpnt:], b)
+					bufpnt += int(blockSize)
 				} else {
 					return fmt.Errorf("dropped frame, len: %d bs: %d", len(b), blockSize)
 				}
@@ -383,10 +377,10 @@ func (t *Client) ReadFlash(ctx context.Context, device byte, lastAddress int, z2
 			retry.Attempts(10),
 			retry.Context(ctx),
 			retry.OnRetry(func(n uint, err error) {
-				log.Printf("#%d: %v", n, err)
-				t.interFrameLatency += 100
-				if b, err2 := t.IDemand(ctx, SetInterFrameLatency, t.interFrameLatency); err2 != nil {
-					log.Printf("failed to set frame latency: %d, parent error: %v : %v: resp: %X", t.interFrameLatency, err, err2, b)
+				t.cfg.OnError(fmt.Errorf("retrying read flash: #%d %w", n, err))
+				t.interFrameLatency += 70
+				if b, errs := t.IDemand(ctx, SetInterFrameLatency, t.interFrameLatency); errs != nil {
+					log.Printf("failed to set frame latency: %d, parent error: %v : %v: resp: %X", t.interFrameLatency, err, errs, b)
 				}
 			}),
 			retry.LastErrorOnly(true),
@@ -502,14 +496,7 @@ func checkErr(f gocan.CANFrame) error {
 func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool, pci byte, address int, length byte) ([]byte, int, error) {
 	//	log.Println("RDBLI")
 	retData := make([]byte, length)
-	payload := []byte{pci, 0x21, length,
-		byte(address >> 24),
-		byte(address >> 16),
-		byte(address >> 8),
-		byte(address),
-		0x00,
-	}
-
+	payload := []byte{pci, 0x21, length, byte(address >> 24), byte(address >> 16), byte(address >> 8), byte(address), 0x00}
 	frame := gocan.NewFrame(t.canID, payload, gocan.ResponseRequired)
 	resp, err := t.c.SendAndPoll(ctx, frame, t.defaultTimeout, t.recvID...)
 	if err != nil {
@@ -540,6 +527,7 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 	}
 
 	if !legionMode || d[3] == 0x00 {
+		c := t.c.Subscribe(ctx, t.recvID...)
 		if err := t.c.SendFrame(t.canID, []byte{0x30}, gocan.CANFrameType{Type: 2, Responses: 18}); err != nil {
 			return nil, 0, err
 		}
@@ -547,8 +535,6 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 		if (length-4)%7 > 0 {
 			m_nrFrameToReceive++
 		}
-
-		c := t.c.Subscribe(ctx, t.recvID...)
 		for m_nrFrameToReceive > 0 {
 			select {
 			case <-ctx.Done():

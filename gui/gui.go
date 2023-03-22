@@ -25,12 +25,8 @@ type appState struct {
 
 var (
 	listData = binding.NewStringList()
-	state    *appState
+	state    = new(appState)
 )
-
-func init() {
-	state = &appState{}
-}
 
 func ShowAndRun(ctx context.Context, a fyne.App) {
 	w := a.NewWindow("GoCANFlasher")

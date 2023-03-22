@@ -34,13 +34,9 @@ func (m *mainWindow) ecuInfo() {
 
 		tr, err := ecu.New(c, &ecu.Config{
 			Type:       state.ecuType,
-			OnProgress: m.callback,
-			OnMessage: func(msg string) {
-				m.callback(msg)
-			},
-			OnError: func(err error) {
-				m.callback("Error: " + err.Error())
-			},
+			OnProgress: m.progress,
+			OnMessage:  m.output,
+			OnError:    m.error,
 		})
 		if err != nil {
 			m.output(err.Error())

@@ -25,17 +25,17 @@ const (
 
 type Client struct {
 	c              *gocan.Client
+	cfg            *ecu.Config
 	defaultTimeout time.Duration
 	legion         *legion.Client
-	cb             model.ProgressCallback
 }
 
 func New(c *gocan.Client, cfg *ecu.Config) ecu.Client {
 	t := &Client{
 		c:              c,
+		cfg:            ecu.LoadConfig(cfg),
 		defaultTimeout: 150 * time.Millisecond,
 		legion:         legion.New(c, cfg, 0x7e0, 0x7e8),
-		cb:             cfg.OnProgress,
 	}
 	return t
 }
@@ -59,9 +59,7 @@ func (t *Client) Info(ctx context.Context) ([]model.HeaderResult, error) {
 		return nil, err
 	}
 
-	if t.cb != nil {
-		t.cb("MCP Firmware information: " + ver)
-	}
+	t.cfg.OnMessage("MCP Firmware information: " + ver)
 
 	return nil, nil
 }
@@ -83,19 +81,13 @@ func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, errors.New("failed to start secondary bootloader")
 	}
+	t.cfg.OnMessage("Dumping MCP")
 
-	if t.cb != nil {
-		t.cb("Dumping MCP")
-	}
 	start := time.Now()
 
 	bin, err := t.legion.ReadFlash(ctx, legion.EcuByte_MCP, 0x40100, false)
 	if err != nil {
 		return nil, err
-	}
-
-	if t.cb != nil {
-		t.cb("Verifying md5..")
 	}
 
 	ecumd5bytes, err := t.legion.IDemand(ctx, legion.GetTrionic8MCPMD5, 0x00)
@@ -104,18 +96,14 @@ func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
 	}
 	calculatedMD5 := md5.Sum(bin)
 
-	if t.cb != nil {
-		t.cb(fmt.Sprintf("Legion md5 : %X", ecumd5bytes))
-		t.cb(fmt.Sprintf("Local md5  : %X", calculatedMD5))
-	}
+	t.cfg.OnMessage(fmt.Sprintf("Remote md5 : %X", ecumd5bytes))
+	t.cfg.OnMessage(fmt.Sprintf("Local md5  : %X", calculatedMD5))
 
 	if !bytes.Equal(ecumd5bytes, calculatedMD5[:]) {
 		return nil, errors.New("md5 Verification failed")
 	}
 
-	if t.cb != nil {
-		t.cb("Done, took: " + time.Since(start).String())
-	}
+	t.cfg.OnMessage("Done, took: " + time.Since(start).String())
 
 	return bin, nil
 }
