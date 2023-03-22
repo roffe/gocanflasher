@@ -4,8 +4,10 @@ go 1.20
 
 require (
 	fyne.io/fyne/v2 v2.3.1
-	github.com/roffe/gocan v0.0.0-20230319215310-a1294f583392
+	github.com/roffe/gocan v0.0.0-20230322183452-08a0f731b56f
 )
+
+require github.com/bendikro/dl v0.0.0-20190410215913-e41fdb9069d4 // indirect
 
 require (
 	fyne.io/systray v1.10.1-0.20230207085535-4a244dbb9d03 // indirect
@@ -48,4 +50,4 @@ require (
 	honnef.co/go/js/dom v0.0.0-20221001195520-26252dedbe70 // indirect
 )
 
-replace github.com/roffe/gocan => C:\Users\flejd\go\src\github.com\roffe\gocan
+//replace github.com/roffe/gocan => C:\Users\flejd\go\src\github.com\roffe\gocan

@@ -56,6 +56,8 @@ github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmV
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/avast/retry-go v3.0.0+incompatible h1:4SOWQ7Qs+oroOTQOYnAHqelpCO0biHSxpiH9JdtuBj0=
 github.com/avast/retry-go v3.0.0+incompatible/go.mod h1:XtSnn+n/sHqQIpZ10K1qAevBhOOCWBLXXy3hyiqqBrY=
+github.com/bendikro/dl v0.0.0-20190410215913-e41fdb9069d4 h1:gOnfOzfeOnOGeASXklSStsYL3/RIbkK7QLz4QwVYsvY=
+github.com/bendikro/dl v0.0.0-20190410215913-e41fdb9069d4/go.mod h1:4FL86ZCTh6McXg9ZTi4MfSSaqfLFJP8PKZe6KtLFnn8=
 github.com/benoitkugler/pstokenizer v1.0.0/go.mod h1:l1G2Voirz0q/jj0TQfabNxVsa8HZXh/VMxFSRALWTiE=
 github.com/benoitkugler/textlayout v0.3.0 h1:2ehWXEkgb6RUokTjXh1LzdGwG4dRP6X3dqhYYDYhUVk=
 github.com/benoitkugler/textlayout v0.3.0/go.mod h1:o+1hFV+JSHBC9qNLIuwVoLedERU7sBPgEFcuSgfvi/w=
@@ -267,8 +269,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/posener/complete v1.1.1/go.mod h1:em0nMJCgc9GFtwrmVmEMR/ZL6WyhyjMBndrE9hABlRI=
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
-github.com/roffe/gocan v0.0.0-20230318191253-e88de059f8ba h1:wMHraARZOu7cUi12G6D30KeifUaxcxgFDHXah4m3Nf8=
-github.com/roffe/gocan v0.0.0-20230318191253-e88de059f8ba/go.mod h1:6WQHa5OhpQTV8Ocnf88ytOdv2s1NyZY5fxDvDMGLs58=
+github.com/roffe/gocan v0.0.0-20230322183452-08a0f731b56f h1:f5O+MiLHvN3PClKWK/JJW0I9RPvfudGWriNnQRhrwwc=
+github.com/roffe/gocan v0.0.0-20230322183452-08a0f731b56f/go.mod h1:5zFWKQtf3XDSkKK5nvxKAzTuPBHUA8aEmCpMt3u1hhU=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
