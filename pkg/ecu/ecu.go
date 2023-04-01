@@ -132,7 +132,7 @@ func CANFilters(t Type) []uint32 {
 	case Trionic5:
 		return []uint32{0x0, 0x05, 0x06, 0x0C}
 	case Trionic7:
-		return []uint32{0x220, 0x238, 0x240, 0x258, 0x266}
+		return []uint32{0x238, 0x258, 0x266}
 	case Trionic8:
 		return []uint32{0x5E8, 0x7E8}
 	case Trionic8MCP:

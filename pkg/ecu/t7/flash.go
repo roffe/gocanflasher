@@ -73,6 +73,10 @@ func (t *Client) FlashECU(ctx context.Context, bin []byte) error {
 		return err
 	}
 
+	if err := t.c.Adapter().SetFilter([]uint32{0x258}); err != nil {
+		t.cfg.OnError(err)
+	}
+
 	t.cfg.OnProgress(-float64(0x80000))
 	t.cfg.OnMessage("Flashing ECU")
 

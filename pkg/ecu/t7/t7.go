@@ -38,9 +38,9 @@ func New(c *gocan.Client, cfg *ecu.Config) ecu.Client {
 }
 
 // 266h Send acknowledgement, has 0x3F on 3rd!
-func (t *Client) Ack(val byte, typ gocan.CANFrameType) {
+func (t *Client) Ack(val byte, typ gocan.CANFrameType) error {
 	ack := []byte{0x40, 0xA1, 0x3F, val & 0xBF, 0x00, 0x00, 0x00, 0x00}
-	t.c.SendFrame(0x266, ack, typ)
+	return t.c.Send(gocan.NewFrame(0x266, ack, typ))
 }
 
 var lastDataInitialization time.Time

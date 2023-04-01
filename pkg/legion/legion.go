@@ -44,7 +44,10 @@ func New(c *gocan.Client, cfg *ecu.Config, canID uint32, recvID ...uint32) *Clie
 		ifl = 32
 	case "canusb":
 		ifl = 0x30
+	case "combiadapter":
+		ifl = 680
 	}
+	cfg.OnMessage("Using interframe latency of " + strconv.Itoa(int(ifl)) + " for " + c.Adapter().Name())
 
 	return &Client{
 		c:                 c,
@@ -220,6 +223,21 @@ func (t *Client) EnableHighSpeed(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+func (t *Client) GetMD5(ctx context.Context, md5type Command, partition uint16) ([]byte, error) {
+	switch md5type {
+	case GetTrionic8MD5:
+		md5sum, err := t.IDemand(ctx, GetTrionic8MD5, partition)
+		if err != nil {
+			return nil, fmt.Errorf("legion: failed to get md5 for block %d: %w", partition, err)
+		}
+		return md5sum, nil
+	case GetTrionic8MCPMD5:
+		return nil, nil
+	default:
+		return nil, errors.New("invalid md5 type")
+	}
 }
 
 // Commands are as follows:
@@ -412,9 +430,9 @@ func (c Command) String() string {
 	case GetCRC32:
 		return "full crc-32"
 	case GetTrionic8MD5:
-		return "Trionic8 md5"
+		return "Trionic8 MD5"
 	case GetTrionic8MCPMD5:
-		return "Trionic8 MCP md5"
+		return "Trionic8 MCP MD5"
 	case StartSecondaryBootloader:
 		return "start secondary bootloader"
 	case MarrySecondaryProcessor:
@@ -432,13 +450,13 @@ func demandErr(command Command, d []byte) error {
 	}
 
 	if command == 1 && d[3] != 1 {
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(150 * time.Millisecond)
 		return errors.New("crc-32 not ready yet :(")
 	}
 
 	if (command == 2 || command == 3) && d[3] != 1 {
-		time.Sleep(100 * time.Millisecond)
-		return errors.New("md5 not ready yet :(")
+		time.Sleep(150 * time.Millisecond)
+		return errors.New("MD5 not ready yet :(")
 	}
 
 	if command == 4 && d[3] != 0x01 {

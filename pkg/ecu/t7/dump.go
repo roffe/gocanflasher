@@ -32,6 +32,10 @@ func (t *Client) readECU(ctx context.Context, addr, length int) ([]byte, error) 
 	var readPos int
 	out := bytes.NewBuffer([]byte{})
 
+	if err := t.c.Adapter().SetFilter([]uint32{0x258}); err != nil {
+		t.cfg.OnError(err)
+	}
+
 	for readPos < length {
 		t.cfg.OnProgress(float64(out.Len()))
 		select {
@@ -54,6 +58,9 @@ func (t *Client) readECU(ctx context.Context, addr, length int) ([]byte, error) 
 			},
 				retry.Context(ctx),
 				retry.Attempts(3),
+				retry.OnRetry(func(n uint, err error) {
+					t.cfg.OnMessage(fmt.Sprintf("Failed to read memory by address, pos: 0x%X, length: 0x%X, retrying: %v", readPos, readLength, err))
+				}),
 				retry.LastErrorOnly(true),
 			)
 			if err != nil {
@@ -75,8 +82,8 @@ func (t *Client) readECU(ctx context.Context, addr, length int) ([]byte, error) 
 func (t *Client) readMemoryByAddress(ctx context.Context, address, length int) ([]byte, error) {
 	// Jump to read adress
 	t.c.SendFrame(0x240, []byte{0x41, 0xA1, 0x08, 0x2C, 0xF0, 0x03, 0x00, byte(length)}, gocan.Outgoing)
-	t.c.SendFrame(0x240, []byte{0x00, 0xA1, byte((address >> 16) & 0xFF), byte((address >> 8) & 0xFF), byte(address & 0xFF), 0x00, 0x00, 0x00}, gocan.ResponseRequired)
-	f, err := t.c.Poll(ctx, t.defaultTimeout, 0x258)
+	frame := gocan.NewFrame(0x240, []byte{0x00, 0xA1, byte((address >> 16) & 0xFF), byte((address >> 8) & 0xFF), byte(address & 0xFF), 0x00, 0x00, 0x00}, gocan.ResponseRequired)
+	f, err := t.c.SendAndPoll(ctx, frame, t.defaultTimeout*3, 0x258)
 	if err != nil {
 		return nil, err
 	}
@@ -86,10 +93,6 @@ func (t *Client) readMemoryByAddress(ctx context.Context, address, length int) (
 	if d[3] != 0x6C || d[4] != 0xF0 {
 		return nil, fmt.Errorf("failed to jump to 0x%X got response: %s", address, f.String())
 	}
-
-	t.c.SendFrame(0x240, []byte{0x40, 0xA1, 0x02, 0x21, 0xF0, 0x00, 0x00, 0x00}, gocan.ResponseRequired) // start data transfer
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
 	b, err := t.recvData(ctx, length)
 	if err != nil {
 		return nil, err
@@ -101,48 +104,59 @@ func (t *Client) readMemoryByAddress(ctx context.Context, address, length int) (
 func (t *Client) recvData(ctx context.Context, length int) ([]byte, error) {
 	var receivedBytes, payloadLeft int
 	out := bytes.NewBuffer([]byte{})
+
+	sub := t.c.Subscribe(ctx, 0x258)
+	startTransfer := gocan.NewFrame(0x240, []byte{0x40, 0xA1, 0x02, 0x21, 0xF0, 0x00, 0x00, 0x00}, gocan.ResponseRequired)
+	if err := t.c.Send(startTransfer); err != nil {
+		return nil, err
+	}
+
 outer:
 	for receivedBytes < length {
-		f, err := t.c.Poll(ctx, t.defaultTimeout, 0x258)
-		if err != nil {
-			return nil, err
-		}
-		d := f.Data()
-		if d[0]&0x40 == 0x40 {
-			payloadLeft = int(d[2]) - 2 // subtract two non-payload bytes
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(t.defaultTimeout * 4):
+			return nil, fmt.Errorf("timeout")
 
-			if payloadLeft > 0 && receivedBytes < length {
-				out.WriteByte(d[5])
-				receivedBytes++
-				payloadLeft--
-			}
-			if payloadLeft > 0 && receivedBytes < length {
-				out.WriteByte(d[6])
-				receivedBytes++
-				payloadLeft--
-			}
-			if payloadLeft > 0 && receivedBytes < length {
-				out.WriteByte(d[7])
-				receivedBytes++
-				payloadLeft--
-			}
-		} else {
-			for i := 0; i < 6; i++ {
-				if receivedBytes < length {
-					out.WriteByte(d[2+i])
+		case f := <-sub:
+			d := f.Data()
+			if d[0]&0x40 == 0x40 {
+				payloadLeft = int(d[2]) - 2 // subtract two non-payload bytes
+
+				if payloadLeft > 0 && receivedBytes < length {
+					out.WriteByte(d[5])
 					receivedBytes++
 					payloadLeft--
-					if payloadLeft == 0 {
-						break
+				}
+				if payloadLeft > 0 && receivedBytes < length {
+					out.WriteByte(d[6])
+					receivedBytes++
+					payloadLeft--
+				}
+				if payloadLeft > 0 && receivedBytes < length {
+					out.WriteByte(d[7])
+					receivedBytes++
+					payloadLeft--
+				}
+			} else {
+				for i := 0; i < 6; i++ {
+					if receivedBytes < length {
+						out.WriteByte(d[2+i])
+						receivedBytes++
+						payloadLeft--
+						if payloadLeft == 0 {
+							break
+						}
 					}
 				}
 			}
-		}
-		if d[0] == 0x80 || d[0] == 0xC0 {
-			t.Ack(d[0], gocan.Outgoing)
-			break outer
-		} else {
-			t.Ack(d[0], gocan.ResponseRequired)
+			if d[0] == 0x80 || d[0] == 0xC0 {
+				t.Ack(d[0], gocan.Outgoing)
+				break outer
+			} else {
+				t.Ack(d[0], gocan.ResponseRequired)
+			}
 		}
 	}
 	return out.Bytes(), nil

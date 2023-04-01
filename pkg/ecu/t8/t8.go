@@ -3,6 +3,7 @@ package t8
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/roffe/gocan/pkg/gmlan"
 	"github.com/roffe/gocanflasher/pkg/ecu"
 	"github.com/roffe/gocanflasher/pkg/ecu/t8sec"
+	"github.com/roffe/gocanflasher/pkg/ecu/t8util"
 	"github.com/roffe/gocanflasher/pkg/legion"
 )
 
@@ -55,6 +57,23 @@ func (t *Client) ResetECU(ctx context.Context) error {
 }
 
 func (t *Client) FlashECU(ctx context.Context, bin []byte) error {
+	if err := t.legion.Bootstrap(ctx); err != nil {
+		return err
+	}
+	t.cfg.OnMessage("Comparing MD5's for erase")
+	t.cfg.OnProgress(-9)
+	t.cfg.OnProgress(0)
+	for i := 1; i <= 9; i++ {
+		lmd5 := t8util.GetPartitionMD5(bin, 6, i)
+		md5, err := t.legion.GetMD5(ctx, legion.GetTrionic8MD5, uint16(i))
+		if err != nil {
+			return err
+		}
+		t.cfg.OnMessage(fmt.Sprintf("local partition   %d> %X", i, lmd5))
+		t.cfg.OnMessage(fmt.Sprintf("remote partition  %d> %X", i, md5))
+		t.cfg.OnProgress(float64(i))
+	}
+
 	return nil
 }
 

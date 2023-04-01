@@ -4,10 +4,22 @@ go 1.20
 
 require (
 	fyne.io/fyne/v2 v2.3.1
-	github.com/roffe/gocan v0.0.0-20230322183452-08a0f731b56f
+	github.com/roffe/gocan v0.0.0-20230330164021-6da9de7554e4
 )
 
-require github.com/bendikro/dl v0.0.0-20190410215913-e41fdb9069d4 // indirect
+require (
+	github.com/bendikro/dl v0.0.0-20190410215913-e41fdb9069d4 // indirect
+	github.com/golang/mock v1.6.0 // indirect
+	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/google/gousb v1.1.2 // indirect
+	github.com/josharian/native v1.0.0 // indirect
+	github.com/mdlayher/netlink v1.7.1 // indirect
+	github.com/mdlayher/socket v0.4.0 // indirect
+	github.com/smallnest/ringbuffer v0.0.0-20210227121335-0a58434b36f2 // indirect
+	go.einride.tech/can v0.5.4 // indirect
+	golang.org/x/mod v0.8.0 // indirect
+	golang.org/x/tools v0.6.0 // indirect
+)
 
 require (
 	fyne.io/systray v1.10.1-0.20230207085535-4a244dbb9d03 // indirect

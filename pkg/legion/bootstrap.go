@@ -2,9 +2,11 @@ package legion
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/avast/retry-go"
+	"github.com/roffe/gocan/pkg/gmlan"
 	"github.com/roffe/gocanflasher/pkg/ecu/t8sec"
 )
 
@@ -71,8 +73,10 @@ func (t *Client) bootstrapPreFlight(ctx context.Context) error {
 		return err
 	}
 
-	if err := t.gm.ReportProgrammedState(ctx); err != nil {
+	if b, err := t.gm.ReportProgrammedState(ctx); err != nil {
 		return err
+	} else {
+		log.Println(gmlan.TranslateProgrammedState(b))
 	}
 
 	if err := t.gm.ProgrammingModeRequest(ctx); err != nil {

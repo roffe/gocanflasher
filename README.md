@@ -8,6 +8,10 @@ Trionic 5/7/8 ecu flasher GUI made with [Fyne.io](https://fyne.io/)
 
 ### Windows 
 
+$env:PKG_CONFIG_PATH="C:\Users\flejd\vcpkg\packages\libusb_x86-windows\lib\pkgconfig"
+$env:CGO_CFLAGS="-IC:\Users\flejd\vcpkg\packages\libusb_x86-windows\include\libusb-1.0"
+$env:CGO_ENABLED=1; $env:GOARCH="386"; go run .    
+
     $env:CGO_ENABLED=1; $env:GOOS="windows"; $env:GOARCH="386"; go run .
 
 ### Linux

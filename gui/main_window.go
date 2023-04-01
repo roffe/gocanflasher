@@ -63,7 +63,7 @@ func newMainWindow(a fyne.App, w fyne.Window) *mainWindow {
 	m.createSelects()
 	m.createButtons()
 	w.SetContent(m.layout())
-	w.Resize(fyne.NewSize(1024, 450))
+	w.Resize(fyne.NewSize(1280, 550))
 	return m
 }
 
