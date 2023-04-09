@@ -47,7 +47,7 @@ func New(c *gocan.Client, cfg *ecu.Config, canID uint32, recvID ...uint32) *Clie
 	case "combiadapter":
 		ifl = 680
 	}
-	cfg.OnMessage("Using interframe latency of " + strconv.Itoa(int(ifl)) + " for " + c.Adapter().Name())
+	cfg.OnMessage("Using interframe latency " + strconv.Itoa(int(ifl)) + " for " + c.Adapter().Name())
 
 	return &Client{
 		c:                 c,
@@ -83,10 +83,10 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 	t.cfg.OnMessage("Uploading bootloader " + strconv.Itoa(len(bootloaderBytes)) + " bytes")
 
 	r := bytes.NewReader(bootloaderBytes)
-	pp := 0
 
 	progress := 0
 
+	pp := 0
 	for i := 0; i < Len; i++ {
 		pp++
 		if pp == 10 {
@@ -101,14 +101,11 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 		for j := 0; j <= 0x21; j++ {
 			payload := make([]byte, 8)
 			payload[0] = seq
-			for x := 1; x < 8; x++ {
-				b, err := r.ReadByte()
-				if err != nil && err != io.EOF {
-					return err
-				}
-				payload[x] = b
-				progress++
+			n, err := r.Read(payload[1:])
+			if err != nil && err != io.EOF {
+				return err
 			}
+			progress += n
 
 			tt := gocan.Outgoing
 			if j == 0x21 {
@@ -152,13 +149,11 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 
 	payload := make([]byte, 8)
 	payload[0] = seq
-	for x := 1; x < 8; x++ {
-		b, err := r.ReadByte()
-		if err != nil && err != io.EOF {
-			return err
-		}
-		payload[x] = b
+	_, err := r.Read(payload[1:])
+	if err != nil && err != io.EOF {
+		return err
 	}
+
 	f2 := gocan.NewFrame(t.canID, payload, gocan.ResponseRequired)
 	resp, err := t.c.SendAndPoll(ctx, f2, t.defaultTimeout, t.recvID...)
 	if err != nil {
@@ -374,8 +369,13 @@ func (t *Client) ReadFlash(ctx context.Context, device byte, lastAddress int, z2
 	t.cfg.OnProgress(float64(0))
 
 	var blockSize byte = 0x80
+	s := 0
 	for bufpnt < lastAddress && ctx.Err() == nil {
-		t.cfg.OnProgress(float64(bufpnt + int(blockSize) - 1))
+		if s == 9 {
+			t.cfg.OnProgress(float64(bufpnt + int(blockSize) - 1))
+			s = 0
+		}
+		s++
 		err := retry.Do(
 			func() error {
 				b, blocksToSkip, err := t.ReadDataByLocalIdentifier(ctx, true, device, bufpnt, blockSize)
@@ -512,7 +512,6 @@ func checkErr(f gocan.CANFrame) error {
 }
 
 func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool, pci byte, address int, length byte) ([]byte, int, error) {
-	//	log.Println("RDBLI")
 	retData := make([]byte, length)
 	payload := []byte{pci, 0x21, length, byte(address >> 24), byte(address >> 16), byte(address >> 8), byte(address), 0x00}
 	frame := gocan.NewFrame(t.canID, payload, gocan.ResponseRequired)
@@ -526,24 +525,23 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 	}
 
 	rx_cnt := 0
-	var seq byte = 0x21
 	d := resp.Data()
 
 	if length <= 4 {
-		for i := 4; i < int(4+length); i++ {
-			if int(length) > rx_cnt {
-				retData[rx_cnt] = d[i]
-				rx_cnt++
-			}
-		}
+		//for i := 4; i < int(4+length); i++ {
+		//	if int(length) > rx_cnt {
+		//		retData[rx_cnt] = d[i]
+		//		rx_cnt++
+		//	}
+		//}
+		copy(retData, d[4:4+length])
+		rx_cnt += int(length)
 		return retData, 0, nil
 	}
+	copy(retData, d[4:])
+	rx_cnt += 4
 
-	for i := 0; i < 4; i++ {
-		retData[i] = d[i+4]
-		rx_cnt++
-	}
-
+	var seq byte = 0x21
 	if !legionMode || d[3] == 0x00 {
 		c := t.c.Subscribe(ctx, t.recvID...)
 		if err := t.c.SendFrame(t.canID, []byte{0x30}, gocan.CANFrameType{Type: 2, Responses: 18}); err != nil {
@@ -560,14 +558,16 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 			case resp := <-c:
 				d2 := resp.Data()
 				if d2[0] != seq {
-					return nil, 0, InvalidSequenceError(fmt.Errorf("received invalid sequenced frame 0x%02X, expected 0x%02X", d2[0], seq))
+					return nil, 0, fmt.Errorf("received invalid sequenced frame 0x%02X, expected 0x%02X", d2[0], seq)
 				}
-				for i := 1; i < resp.Length(); i++ {
-					if rx_cnt < int(length) {
-						retData[rx_cnt] = d2[i]
-						rx_cnt++
-					}
-				}
+				//for i := 1; i < resp.Length(); i++ {
+				//	if rx_cnt < int(length) {
+				//		retData[rx_cnt] = d2[i]
+				//		rx_cnt++
+				//	}
+				//}
+				copy(retData[rx_cnt:], d2[1:resp.Length()])
+				rx_cnt += resp.Length() - 1
 				seq++
 				m_nrFrameToReceive--
 				if seq > 0x2F {
@@ -589,19 +589,6 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 	}
 
 	return retData, 0, nil
-}
-
-type invalidSequenceError struct {
-	error
-}
-
-func InvalidSequenceError(err error) error {
-	return invalidSequenceError{err}
-}
-
-func IsInvalidSequenceError(err error) bool {
-	_, isIndalidSequenceError := err.(invalidSequenceError)
-	return !isIndalidSequenceError
 }
 
 func (t *Client) GetMCPVersion(ctx context.Context) (string, error) {

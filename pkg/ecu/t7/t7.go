@@ -148,7 +148,7 @@ func (t *Client) KnockKnock(ctx context.Context) (bool, error) {
 	for i := 0; i <= 4; i++ {
 		ok, err := t.letMeIn(ctx, i)
 		if err != nil {
-			log.Printf("/!\\ Failed to obtain security access: %v", err)
+			t.cfg.OnError(fmt.Errorf("/!\\ Failed to obtain security access: %v", err))
 			time.Sleep(3 * time.Second)
 			continue
 

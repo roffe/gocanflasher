@@ -34,6 +34,8 @@ func (m *mainWindow) readDTC() {
 		tr, err := ecu.New(c, &ecu.Config{
 			Type:       state.ecuType,
 			OnProgress: m.progress,
+			OnMessage:  m.output,
+			OnError:    m.error,
 		})
 		if err != nil {
 			m.output(err.Error())

@@ -2,7 +2,6 @@ package legion
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"github.com/avast/retry-go"
@@ -47,7 +46,7 @@ func (t *Client) Bootstrap(ctx context.Context) error {
 		if err := t.StartBootloader(ctx, 0x102400); err != nil {
 			return err
 		}
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		t.legionRunning = t.Alive(ctx)
 	}
 
@@ -76,7 +75,7 @@ func (t *Client) bootstrapPreFlight(ctx context.Context) error {
 	if b, err := t.gm.ReportProgrammedState(ctx); err != nil {
 		return err
 	} else {
-		log.Println(gmlan.TranslateProgrammedState(b))
+		t.cfg.OnMessage("ECU Programmed state: " + gmlan.TranslateProgrammedState(b))
 	}
 
 	if err := t.gm.ProgrammingModeRequest(ctx); err != nil {
