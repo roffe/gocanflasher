@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	fyne.io/fyne/v2 v2.3.1
-	github.com/roffe/gocan v0.0.0-20230330164021-6da9de7554e4
+	github.com/roffe/gocan v0.0.0-20230409000017-11e20b3d1f01
 )
 
 require (
@@ -15,7 +15,6 @@ require (
 	github.com/josharian/native v1.0.0 // indirect
 	github.com/mdlayher/netlink v1.7.1 // indirect
 	github.com/mdlayher/socket v0.4.0 // indirect
-	github.com/smallnest/ringbuffer v0.0.0-20210227121335-0a58434b36f2 // indirect
 	go.einride.tech/can v0.5.4 // indirect
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/tools v0.6.0 // indirect
