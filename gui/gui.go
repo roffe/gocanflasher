@@ -9,13 +9,12 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/data/binding"
-	"github.com/roffe/gocanflasher/pkg/ecu"
 	sdialog "github.com/sqweek/dialog"
 )
 
 type appState struct {
-	ecuType      ecu.Type
-	canRate      float64
+	ecuType string
+	//canRate      float64
 	adapter      string
 	port         string
 	portBaudrate int
@@ -61,7 +60,7 @@ func (m *mainWindow) closeHandler() {
 }
 
 func (m *mainWindow) loadPreferences() {
-	state.canRate = m.app.Preferences().FloatWithFallback("canrate", 500)
+	//state.canRate = m.app.Preferences().FloatWithFallback("canrate", 500)
 	m.ecuList.SetSelectedIndex(m.app.Preferences().IntWithFallback("ecu", 0))
 	m.adapterList.SetSelected(m.app.Preferences().StringWithFallback("adapter", "Canusb"))
 	state.port = m.app.Preferences().String("port")
@@ -72,7 +71,7 @@ func (m *mainWindow) loadPreferences() {
 
 func speeds() []string {
 	var out []string
-	l := []int{9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600, 1000000, 2000000}
+	l := []int{9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600, 1000000, 2000000, 3000000}
 	for _, ll := range l {
 		out = append(out, strconv.Itoa(ll))
 	}

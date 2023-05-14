@@ -51,6 +51,7 @@ func (t *Client) Bootstrap(ctx context.Context) error {
 	}
 
 	if t.legionRunning {
+		t.cfg.OnMessage("Legion is running, enabling high speed mode")
 		if err := t.EnableHighSpeed(ctx); err != nil {
 			return err
 		}

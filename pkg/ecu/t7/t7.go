@@ -14,13 +14,13 @@ import (
 )
 
 func init() {
-	ecu.Register(ecu.Trionic7, New)
+	ecu.Register(&ecu.EcuInfo{
+		Name:    "Trionic 7",
+		NewFunc: New,
+		CANRate: 500,
+		Filter:  []uint32{0x238, 0x258, 0x266},
+	})
 }
-
-const (
-	IBusRate = 47.619
-	PBusRate = 500
-)
 
 type Client struct {
 	c              *gocan.Client
@@ -259,4 +259,10 @@ func calcenCustom(seed int, key1, key2 int) int {
 	key -= key2
 	key &= 0xFFFF
 	return key
+}
+
+func (t *Client) StopSession(ctx context.Context) error {
+	payload := []byte{0x40, 0xA1, 0x02, 0x82, 0x00, 0x00, 0x00, 0x00}
+	frame := gocan.NewFrame(0x220, payload, gocan.ResponseRequired)
+	return t.c.Send(frame)
 }

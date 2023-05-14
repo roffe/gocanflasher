@@ -46,6 +46,8 @@ func New(c *gocan.Client, cfg *ecu.Config, canID uint32, recvID ...uint32) *Clie
 		ifl = 0x30
 	case "combiadapter":
 		ifl = 680
+	case "yaca":
+		ifl = 2
 	}
 	cfg.OnMessage("Using interframe latency " + strconv.Itoa(int(ifl)) + " for " + c.Adapter().Name())
 
@@ -73,7 +75,7 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 		return err
 	}
 	startAddress := 0x102400
-	Len := 9996 / 238
+	noTransfers := len(bootloaderBytes) / 238
 	seq := byte(0x21)
 
 	start := time.Now()
@@ -87,33 +89,27 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 	progress := 0
 
 	pp := 0
-	for i := 0; i < Len; i++ {
+	for i := 0; i < noTransfers; i++ {
 		pp++
 		if pp == 10 {
 			t.gm.TesterPresentNoResponseAllowed()
 			pp = 0
 		}
 		if err := t.gm.TransferData(ctx, 0x00, 0xF0, startAddress); err != nil {
-
 			return err
 		}
 		seq = 0x21
-		for j := 0; j <= 0x21; j++ {
-			payload := make([]byte, 8)
-			payload[0] = seq
+		for j := 0; j <= 33; j++ {
+			payload := []byte{seq, 0, 0, 0, 0, 0, 0, 0}
 			n, err := r.Read(payload[1:])
 			if err != nil && err != io.EOF {
 				return err
 			}
 			progress += n
-
-			tt := gocan.Outgoing
-			if j == 0x21 {
-				tt = gocan.ResponseRequired
-			}
-			f := gocan.NewFrame(t.canID, payload, tt)
+			f := gocan.NewFrame(t.canID, payload, gocan.Outgoing)
 			if j == 0x21 {
 				f.SetTimeout(t.defaultTimeout * 4)
+				f.SetType(gocan.ResponseRequired)
 			}
 			if err := t.c.Send(f); err != nil {
 				return err
@@ -131,7 +127,6 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 		}
 		if err := gmlan.CheckErr(resp); err != nil {
 			log.Println(resp.String())
-
 			return err
 		}
 		d := resp.Data()
@@ -141,16 +136,12 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 		startAddress += 0xEA
 	}
 
-	seq = 0x21
-
 	if err := t.gm.TransferData(ctx, 0x00, 0x0A, startAddress); err != nil {
 		return err
 	}
 
-	payload := make([]byte, 8)
-	payload[0] = seq
-	_, err := r.Read(payload[1:])
-	if err != nil && err != io.EOF {
+	payload := []byte{0x21, 0, 0, 0, 0, 0, 0, 0}
+	if _, err := r.Read(payload[1:]); err != nil && err != io.EOF {
 		return err
 	}
 
@@ -188,7 +179,7 @@ func (t *Client) Ping(ctx context.Context) error {
 		return errors.New("LegionPing: " + err.Error())
 	}
 	d := resp.Data()
-	if d[0] == 0xDE && d[1] == 0xAD && d[2] == 0xF0 && d[3] == 0x0F {
+	if d[0] == 0xDE && d[1] == 0xAD { //&& d[2] == 0xF0 && d[3] == 0x0F {
 		return nil
 	}
 	return errors.New("LegionPing: no response")
@@ -211,7 +202,7 @@ func (t *Client) Exit(ctx context.Context) error {
 	return nil
 }
 
-// Set inter frame latency to 0x20(32)
+// Set inter frame latency
 func (t *Client) EnableHighSpeed(ctx context.Context) error {
 	_, err := t.IDemand(ctx, SetInterFrameLatency, t.interFrameLatency)
 	if err != nil {
@@ -369,13 +360,8 @@ func (t *Client) ReadFlash(ctx context.Context, device byte, lastAddress int, z2
 	t.cfg.OnProgress(float64(0))
 
 	var blockSize byte = 0x80
-	s := 0
+
 	for bufpnt < lastAddress && ctx.Err() == nil {
-		if s == 9 {
-			t.cfg.OnProgress(float64(bufpnt + int(blockSize) - 1))
-			s = 0
-		}
-		s++
 		err := retry.Do(
 			func() error {
 				b, blocksToSkip, err := t.ReadDataByLocalIdentifier(ctx, true, device, bufpnt, blockSize)
@@ -406,6 +392,7 @@ func (t *Client) ReadFlash(ctx context.Context, device byte, lastAddress int, z2
 		if err != nil {
 			return nil, err
 		}
+		t.cfg.OnProgress(float64(bufpnt + int(blockSize) - 1))
 	}
 	t.cfg.OnProgress(float64(lastAddress))
 	return buf, nil

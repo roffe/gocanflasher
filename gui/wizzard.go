@@ -8,7 +8,6 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
-	"github.com/roffe/gocanflasher/pkg/ecu"
 )
 
 //go:embed ng900.png
@@ -102,17 +101,17 @@ func (w *wizzard) selectOperation() fyne.CanvasObject {
 func (w *wizzard) selectCar() fyne.CanvasObject {
 
 	sel900 := func() {
-		w.mw.setECU(ecu.Trionic5)
+		w.mw.setECU("Trionic 5")
 		w.window.SetContent(w.selectOperation())
 	}
 
 	sel95 := func() {
-		w.mw.setECU(ecu.Trionic7)
+		w.mw.setECU("Trionic 7")
 		w.window.SetContent(w.selectOperation())
 	}
 
 	sel93 := func() {
-		w.mw.setECU(ecu.Trionic8)
+		w.mw.setECU("Trionic 8")
 		w.window.SetContent(w.selectOperation())
 	}
 

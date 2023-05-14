@@ -90,8 +90,8 @@ func (t *Client) FlashECU(ctx context.Context, bin []byte) error {
 			for binPos < o.end {
 				left := o.end - binPos
 				var writeBytes int
-				if left >= 0xF0 {
-					writeBytes = 0xF0
+				if left >= 60 {
+					writeBytes = 60
 				} else {
 					writeBytes = left
 				}
@@ -101,18 +101,21 @@ func (t *Client) FlashECU(ctx context.Context, bin []byte) error {
 				binPos += writeBytes
 				left -= writeBytes
 				t.cfg.OnProgress(float64(binPos))
-				time.Sleep(5 * time.Millisecond)
 			}
-			t.cfg.OnProgress(float64(binPos))
 			return nil
 		},
 			retry.Context(ctx),
 			retry.Attempts(3),
+			retry.OnRetry(func(n uint, err error) {
+				t.cfg.OnMessage(fmt.Sprintf("retrying writeRange: %v", err))
+			}),
+			retry.Delay(150*time.Millisecond),
 			retry.LastErrorOnly(true),
 		)
 		if err != nil {
 			return err
 		}
+
 	}
 	end, err := t.c.SendAndPoll(ctx, gocan.NewFrame(0x240, []byte{0x40, 0xA1, 0x01, 0x37, 0x00, 0x00, 0x00, 0x00}, gocan.ResponseRequired), t.defaultTimeout, 0x258)
 	if err != nil {
@@ -127,7 +130,7 @@ func (t *Client) FlashECU(ctx context.Context, bin []byte) error {
 	}
 
 	t.cfg.OnMessage(fmt.Sprintf("Done, took: %s", time.Since(start).Round(time.Second)))
-
+	defer t.StopSession(ctx)
 	return nil
 }
 
@@ -142,7 +145,6 @@ func (t *Client) writeJump(ctx context.Context, offset, length int) error {
 		return fmt.Errorf("failed to enable request download #1")
 	}
 	log.Printf("writeJump: jumpMsg2=%X", jumpMsg2)
-	time.Sleep(5 * time.Millisecond)
 
 	f, err := t.c.SendAndPoll(ctx, gocan.NewFrame(0x240, jumpMsg2, gocan.ResponseRequired), t.defaultTimeout, 0x258)
 	if err != nil {
@@ -156,6 +158,7 @@ func (t *Client) writeJump(ctx context.Context, offset, length int) error {
 		log.Println(f.String())
 		return fmt.Errorf("invalid response enabling download mode")
 	}
+
 	return nil
 }
 
@@ -164,8 +167,8 @@ func (t *Client) writeRange(ctx context.Context, start, end int, bin []byte) err
 	binPos := start
 	rows := int(math.Floor(float64((length + 3)) / 6.0))
 	first := true
+	var data = make([]byte, 8)
 	for i := rows; i >= 0; i-- {
-		var data = make([]byte, 8)
 		data[1] = 0xA1
 		select {
 		case <-ctx.Done():
@@ -205,6 +208,8 @@ func (t *Client) writeRange(ctx context.Context, start, end int, bin []byte) err
 		}
 		if i > 0 {
 			t.c.SendFrame(0x240, data, gocan.Outgoing)
+			for i := 0; i < 1000; i++ {
+			}
 			continue
 		}
 		t.c.SendFrame(0x240, data, gocan.ResponseRequired)

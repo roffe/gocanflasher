@@ -4,19 +4,10 @@ import (
 	"context"
 	"errors"
 	"log"
-	"strings"
+	"sort"
 
 	"github.com/roffe/gocan"
 	"github.com/roffe/gocanflasher/pkg/model"
-)
-
-const (
-	UnknownECU Type = -1
-	Trionic5   Type = iota
-	Trionic7
-	Trionic8
-	Trionic8MCP
-	Me96
 )
 
 type Client interface {
@@ -29,44 +20,8 @@ type Client interface {
 	ResetECU(context.Context) error
 }
 
-func FromString(s string) Type {
-	switch strings.ToLower(s) {
-	case "5", "t5", "trionic5", "trionic 5":
-		return Trionic5
-	case "7", "t7", "trionic7", "trionic 7":
-		return Trionic7
-	case "8", "t8", "trionic8", "trionic 8":
-		return Trionic8
-	case "mcp", "t8mcp", "trionic8mcp", "trionic 8 mcp":
-		return Trionic8MCP
-	case "96", "me9.6", "me96", "me 9.6":
-		return Me96
-	default:
-		return UnknownECU
-	}
-}
-
-type Type int
-
-func (e Type) String() string {
-	switch e {
-	case Trionic5:
-		return "Trionic 5"
-	case Trionic7:
-		return "Trionic 7"
-	case Trionic8:
-		return "Trionic 8"
-	case Trionic8MCP:
-		return "Trionic 8 MCP"
-	case Me96:
-		return "Me 9.6"
-	default:
-		return "Unknown ECU"
-	}
-}
-
 type Config struct {
-	Type       Type
+	Name       string
 	OnProgress func(float64)
 	OnError    func(error)
 	OnMessage  func(string)
@@ -75,7 +30,7 @@ type Config struct {
 func LoadConfig(cfg *Config) *Config {
 	if cfg == nil {
 		cfg = &Config{
-			Type: UnknownECU,
+			Name: "Unknown ECU",
 		}
 	}
 
@@ -100,44 +55,49 @@ func LoadConfig(cfg *Config) *Config {
 	return cfg
 }
 
-var ecuMap = map[Type]func(c *gocan.Client, cfg *Config) Client{}
+var ecuMap = map[string]*EcuInfo{}
 
-func Register(t Type, f func(c *gocan.Client, cfg *Config) Client) {
-	ecuMap[t] = f
+type EcuInfo struct {
+	Name    string
+	NewFunc func(c *gocan.Client, cfg *Config) Client
+	CANRate float64
+	Filter  []uint32
+}
+
+func Register(t *EcuInfo) {
+	if _, found := ecuMap[t.Name]; found {
+		panic("ECU already registered: " + t.Name)
+	}
+	ecuMap[t.Name] = t
 }
 
 func New(c *gocan.Client, cfg *Config) (Client, error) {
-	if ecu, found := ecuMap[cfg.Type]; found {
-		return ecu(c, cfg), nil
+	if ecu, found := ecuMap[cfg.Name]; found {
+		return ecu.NewFunc(c, cfg), nil
 	}
 	return nil, errors.New("unknown ECU")
-	/*
-		switch cfg.Type {
-		case Trionic5:
-			return t5.New(c, cfg), nil
-		case Trionic7:
-			return t7.New(c, cfg), nil
-		case Trionic8:
-			return t8.New(c, cfg), nil
-		case Trionic8MCP:
-			return t8mcp.New(c, cfg), nil
-		default:
-			return nil, errors.New("unknown ECU")
-		}
-	*/
 }
 
-func CANFilters(t Type) []uint32 {
-	switch t {
-	case Trionic5:
-		return []uint32{0x0, 0x05, 0x06, 0x0C}
-	case Trionic7:
-		return []uint32{0x238, 0x258, 0x266}
-	case Trionic8:
-		return []uint32{0x5E8, 0x7E8}
-	case Trionic8MCP:
-		return []uint32{0x7E8}
-	default:
+func List() (ecus []string) {
+	for k := range ecuMap {
+		ecus = append(ecus, k)
+	}
+	sort.Strings(ecus)
+	return
+}
+
+func Filters(ecuName string) []uint32 {
+	e, found := ecuMap[ecuName]
+	if !found {
 		return []uint32{}
 	}
+	return e.Filter
+}
+
+func CANRate(ecuName string) float64 {
+	e, found := ecuMap[ecuName]
+	if !found {
+		return 0
+	}
+	return e.CANRate
 }

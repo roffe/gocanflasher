@@ -1,8 +1,9 @@
-package t5
+package t5legion
 
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/roffe/gocanflasher/pkg/model"
@@ -14,6 +15,16 @@ func (t *Client) Info(ctx context.Context) ([]model.HeaderResult, error) {
 			return nil, err
 		}
 	}
+
+	sys, err := t.RetrieveSystemInformation(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	t.cfg.OnMessage(fmt.Sprintf("Firmware Base: %05X", sys.FirmwareBase))
+	t.cfg.OnMessage(fmt.Sprintf("Flash Size: %X", sys.FlashSize))
+	t.cfg.OnMessage(fmt.Sprintf("Flash Type: %05X", sys.FlashType))
+	t.cfg.OnMessage(fmt.Sprintf("Flash ID: %04X", sys.FlashID))
 
 	footer, err := t.GetECUFooter(ctx)
 	if err != nil {
@@ -28,6 +39,7 @@ func (t *Client) Info(ctx context.Context) ([]model.HeaderResult, error) {
 		a.ID = d.ID
 		out = append(out, a)
 	}
+
 	return out, nil
 }
 
@@ -79,7 +91,7 @@ func (t *Client) DetermineECU(ctx context.Context) (ECUType, error) {
 		return UnknownECU, err
 	}
 
-	chip, err := t.GetChipTypes(ctx)
+	sys, err := t.RetrieveSystemInformation(ctx)
 	if err != nil {
 		return UnknownECU, err
 	}
@@ -87,17 +99,18 @@ func (t *Client) DetermineECU(ctx context.Context) (ECUType, error) {
 	romoffset := GetIdentifierFromFooter(footer, ROMoffset)
 
 	var flashsize uint16
-	switch chip[5] {
-	case 0xB8, // Intel/CSI/OnSemi 28F512
-		0x5D, // Atmel 29C512
-		0x25: // AMD 28F512
+
+	switch sys.FlashID {
+	case 0x1B8, // Intel/CSI/OnSemi 28F512
+		0x15D, // Atmel 29C512
+		0x125: // AMD 28F512
 		flashsize = 128
 	case 0xD5, // Atmel 29C010
-		0xB5, // SST 39F010
-		0xB4, // Intel/CSI/OnSemi 28F010
-		0xA7, // AMD 28F010
-		0xA4, // AMIC 29F010
-		0x20: // AMD/ST 29F010
+		0x1B5, // SST 39F010
+		0x1B4, // Intel/CSI/OnSemi 28F010
+		0x1A7, // AMD 28F010
+		0x1A4, // AMIC 29F010
+		0x120: // AMD/ST 29F010
 		flashsize = 256
 	default:
 		flashsize = 0

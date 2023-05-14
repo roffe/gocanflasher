@@ -19,6 +19,7 @@ func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer t.StopSession(ctx)
 	return bin, nil
 }
 

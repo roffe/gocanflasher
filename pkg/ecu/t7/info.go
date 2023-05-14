@@ -25,6 +25,9 @@ func (t *Client) Info(ctx context.Context) ([]model.HeaderResult, error) {
 	if err := t.DataInitialization(ctx); err != nil {
 		return nil, err
 	}
+
+	defer t.StopSession(ctx)
+
 	var out []model.HeaderResult
 	for _, d := range T7Headers {
 		h, err := t.GetHeader(ctx, byte(d.ID))

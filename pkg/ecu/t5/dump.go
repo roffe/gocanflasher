@@ -3,9 +3,11 @@ package t5
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
-	"log"
 	"time"
+
+	"github.com/avast/retry-go"
 )
 
 func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
@@ -32,13 +34,23 @@ func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
 
 	address := start + 5
 	for i := 0; i < int(length/6); i++ {
-		b, err := t.ReadMemoryByAddress(ctx, address)
+		err := retry.Do(
+			func() error {
+				b, err := t.ReadMemoryByAddress(ctx, address)
+				if err != nil {
+					return err
+				}
+				copy(buffer[i*6:], b)
+				progress += len(b)
+				return nil
+			},
+			retry.OnRetry(func(n uint, err error) {
+				t.cfg.OnError(fmt.Errorf("retrying to read memory by address: %w", err))
+			}),
+			retry.Attempts(3),
+		)
 		if err != nil {
 			return nil, err
-		}
-		for j := 0; j < 6; j++ {
-			buffer[(i*6)+j] = b[j]
-			progress++
 		}
 		address += 6
 		t.cfg.OnProgress(float64(progress))
@@ -46,21 +58,31 @@ func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
 
 	// Get the leftover bytes
 	if (length % 6) > 0 {
-		b, err := t.ReadMemoryByAddress(ctx, start+length-1)
+		err := retry.Do(
+			func() error {
+				b, err := t.ReadMemoryByAddress(ctx, start+length-1)
+				if err != nil {
+					return err
+				}
+				for j := (6 - (length % 6)); j < 6; j++ {
+					buffer[length-6+j] = b[j]
+					progress++
+				}
+				return nil
+			},
+			retry.OnRetry(func(n uint, err error) {
+				t.cfg.OnError(fmt.Errorf("retrying to read memory by address: %w", err))
+			}),
+			retry.Attempts(3),
+		)
 		if err != nil {
 			return nil, err
-		}
-		for j := (6 - (length % 6)); j < 6; j++ {
-			buffer[length-6+j] = b[j]
-			progress++
 		}
 		t.cfg.OnProgress(float64(progress))
 	}
 
 	t.cfg.OnProgress(float64(length))
 	t.cfg.OnMessage(fmt.Sprintf("Done, took: %s", time.Since(startTime).Round(time.Millisecond).String()))
-
-	//fmt.Printf("took: %s\n", time.Since(startTime).Round(time.Millisecond).String())
 
 	checksum, err := t.GetECUChecksum(ctx)
 	if err != nil {
@@ -73,8 +95,8 @@ func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
 	}
 
 	if !bytes.Equal(checksum, calculated) {
-		log.Println("!!! Dumped bin and calculated checksum from ECU does not match !!!")
-		log.Printf("ECU reported checksum: %X, calculated: %X", checksum, calculated)
+		t.cfg.OnError(errors.New("Dumped bin and calculated checksum from ECU does not match")) //lint:ignore ST1005 ignore this shit
+		t.cfg.OnError(fmt.Errorf("ECU reported checksum: %X, calculated: %X", checksum, calculated))
 	}
 
 	return buffer, nil

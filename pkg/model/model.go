@@ -2,7 +2,7 @@ package model
 
 import "fmt"
 
-type ProgressCallback func(interface{})
+// type ProgressCallback func(interface{})
 
 type Header struct {
 	Desc string

@@ -15,9 +15,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"github.com/roffe/gocan/adapter"
 	"github.com/roffe/gocanflasher/pkg/ecu"
-	"github.com/roffe/gocanflasher/pkg/ecu/t5"
-	"github.com/roffe/gocanflasher/pkg/ecu/t7"
-	"github.com/roffe/gocanflasher/pkg/ecu/t8"
 )
 
 const eas = "KW"
@@ -142,24 +139,11 @@ func (m *mainWindow) wizzard() {
 }
 
 func (m *mainWindow) createSelects() {
-	m.ecuList = widget.NewSelect([]string{"Trionic 5", "Trionic 7", "Trionic 8", "Trionic 8 MCP"}, func(s string) {
-		index := m.ecuList.SelectedIndex()
-		state.ecuType = ecu.Type(index + 1)
-		switch state.ecuType {
-		case ecu.Trionic5:
-			state.canRate = t5.PBusRate
-			m.dtcBTN.Hide()
-		case ecu.Trionic7:
-			m.dtcBTN.Hide()
-			state.canRate = t7.PBusRate
-		case ecu.Trionic8:
-			m.dtcBTN.Show()
-			state.canRate = t8.PBusRate
-		}
 
-		m.app.Preferences().SetFloat("canrate", state.canRate)
-		m.app.Preferences().SetInt("ecu", index)
-
+	m.ecuList = widget.NewSelect(ecu.List(), func(selected string) {
+		state.ecuType = selected
+		//m.app.Preferences().SetFloat("canrate", state.canRate)
+		m.app.Preferences().SetInt("ecu", m.ecuList.SelectedIndex())
 	})
 
 	m.adapterList = widget.NewSelect(adapter.List(), func(s string) {

@@ -16,13 +16,13 @@ import (
 )
 
 func init() {
-	ecu.Register(ecu.Trionic8MCP, New)
+	ecu.Register(&ecu.EcuInfo{
+		Name:    "Trionic 8 MCP",
+		NewFunc: New,
+		CANRate: 500,
+		Filter:  []uint32{0x7E8},
+	})
 }
-
-const (
-	IBusRate = 47.619
-	PBusRate = 500
-)
 
 type Client struct {
 	c              *gocan.Client

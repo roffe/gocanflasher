@@ -1,8 +1,6 @@
 package gui
 
-import "github.com/roffe/gocanflasher/pkg/ecu"
-
-func (m *mainWindow) setECU(t ecu.Type) {
+func (m *mainWindow) setECU(t string) {
 	state.ecuType = t
-	m.ecuList.SetSelected(t.String())
+	m.ecuList.SetSelected(t)
 }

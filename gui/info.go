@@ -33,7 +33,7 @@ func (m *mainWindow) ecuInfo() {
 		defer c.Close()
 
 		tr, err := ecu.New(c, &ecu.Config{
-			Type:       state.ecuType,
+			Name:       state.ecuType,
 			OnProgress: m.progress,
 			OnMessage:  m.output,
 			OnError:    m.error,

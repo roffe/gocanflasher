@@ -1,4 +1,4 @@
-package t5
+package t5legion
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 
 func init() {
 	ecu.Register(&ecu.EcuInfo{
-		Name:    "Trionic 5",
+		Name:    "Trionic 5 Legion",
 		NewFunc: New,
 		CANRate: 615.384,
 		Filter:  []uint32{0x00, 0x05, 0x06, 0x0C},
@@ -49,7 +49,8 @@ type Client struct {
 	defaultTimeout time.Duration
 	bootloaded     bool
 	//cb             model.ProgressCallback
-	cfg *ecu.Config
+	cfg       *ecu.Config
+	ecuFooter []byte
 }
 
 func New(c *gocan.Client, cfg *ecu.Config) ecu.Client {

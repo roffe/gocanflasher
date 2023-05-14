@@ -21,8 +21,8 @@ func (m *mainWindow) initCAN(ctx context.Context) (*gocan.Client, error) {
 		&gocan.AdapterConfig{
 			Port:         state.port,
 			PortBaudrate: state.portBaudrate,
-			CANRate:      state.canRate,
-			CANFilter:    ecu.CANFilters(state.ecuType),
+			CANRate:      ecu.CANRate(state.ecuType),
+			CANFilter:    ecu.Filters(state.ecuType),
 			PrintVersion: true,
 			OnMessage:    m.output,
 			OnError: func(err error) {
