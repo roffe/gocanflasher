@@ -130,7 +130,7 @@ func (t *Client) FlashECU(ctx context.Context, bin []byte) error {
 	}
 
 	t.cfg.OnMessage(fmt.Sprintf("Done, took: %s", time.Since(start).Round(time.Second)))
-	defer t.StopSession(ctx)
+	//defer t.StopSession(ctx)
 	return nil
 }
 

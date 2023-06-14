@@ -10,12 +10,12 @@ import (
 )
 
 var T7Headers = []model.Header{
-	{Desc: "VIN", ID: 0x90},
-	{Desc: "Box Hardware P/N", ID: 0x91},
-	{Desc: "Immo Code", ID: 0x92},
-	{Desc: "Software P/N", ID: 0x94},
-	{Desc: "ECU Software version:", ID: 0x95},
 	{Desc: "Engine type", ID: 0x97},
+	{Desc: "Software version:", ID: 0x95},
+	{Desc: "Software P/N", ID: 0x94},
+	{Desc: "Immobiilizer code", ID: 0x92},
+	{Desc: "Chassis ID/VIN", ID: 0x90},
+	{Desc: "Box Hardware P/N", ID: 0x91},
 	{Desc: "Tester info", ID: 0x98},
 	{Desc: "Software date", ID: 0x99},
 }

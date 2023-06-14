@@ -5,4 +5,4 @@ Website = "https://roffe.nu/"
   Name = "GoCANFlasher"
   ID = "com.roffe.gcf"
   Version = "1.0.1"
-  Build = 12
+  Build = 24
