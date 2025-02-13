@@ -8,13 +8,13 @@ import (
 )
 
 // Noop command to satisfy interface
-func (t *Client) ResetECU(ctx context.Context) error {
+func (t *Client) ResetECU2(ctx context.Context) error {
 	return nil
 }
 
-func (t *Client) ResetECU2(ctx context.Context) error {
+func (t *Client) ResetECU(ctx context.Context) error {
 	frame := gocan.NewFrame(0x240, []byte{0x40, 0xA1, 0x02, 0x11, 0x01}, gocan.ResponseRequired)
-	f, err := t.c.SendAndPoll(ctx, frame, t.defaultTimeout, 0x258)
+	f, err := t.c.SendAndWait(ctx, frame, t.defaultTimeout, 0x258)
 	if err != nil {
 		return err
 	}

@@ -120,7 +120,7 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 			}
 			t.cfg.OnProgress(float64(progress))
 		}
-		resp, err := t.c.Poll(ctx, t.defaultTimeout*5, t.recvID...)
+		resp, err := t.c.Wait(ctx, t.defaultTimeout*5, t.recvID...)
 		if err != nil {
 
 			return err
@@ -146,7 +146,7 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 	}
 
 	f2 := gocan.NewFrame(t.canID, payload, gocan.ResponseRequired)
-	resp, err := t.c.SendAndPoll(ctx, f2, t.defaultTimeout, t.recvID...)
+	resp, err := t.c.SendAndWait(ctx, f2, t.defaultTimeout, t.recvID...)
 	if err != nil {
 		return err
 	}
@@ -171,7 +171,7 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 
 func (t *Client) Ping(ctx context.Context) error {
 	frame := gocan.NewFrame(t.canID, []byte{0xEF, 0xBE, 0x00, 0x00, 0x00, 0x00, 0x33, 0x66}, gocan.ResponseRequired)
-	resp, err := t.c.SendAndPoll(ctx, frame, t.defaultTimeout, t.recvID...)
+	resp, err := t.c.SendAndWait(ctx, frame, t.defaultTimeout, t.recvID...)
 	if err != nil {
 		return errors.New("LegionPing: " + err.Error())
 	}
@@ -188,7 +188,7 @@ func (t *Client) Ping(ctx context.Context) error {
 func (t *Client) Exit(ctx context.Context) error {
 	payload := []byte{0x01, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 	frame := gocan.NewFrame(t.canID, payload, gocan.ResponseRequired)
-	resp, err := t.c.SendAndPoll(ctx, frame, t.defaultTimeout, t.recvID...)
+	resp, err := t.c.SendAndWait(ctx, frame, t.defaultTimeout, t.recvID...)
 	if err != nil {
 		return errors.New("LegionExit: " + err.Error())
 	}
@@ -281,7 +281,7 @@ func (t *Client) IDemand(ctx context.Context, command Command, wish uint16) ([]b
 	var out []byte
 
 	err := retry.Do(func() error {
-		resp, err := t.c.SendAndPoll(ctx, frame, t.defaultTimeout, t.recvID...)
+		resp, err := t.c.SendAndWait(ctx, frame, t.defaultTimeout, t.recvID...)
 		if err != nil {
 			return err
 		}
@@ -502,7 +502,7 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 	retData := make([]byte, length)
 	payload := []byte{pci, 0x21, length, byte(address >> 24), byte(address >> 16), byte(address >> 8), byte(address), 0x00}
 	frame := gocan.NewFrame(t.canID, payload, gocan.ResponseRequired)
-	resp, err := t.c.SendAndPoll(ctx, frame, t.defaultTimeout, t.recvID...)
+	resp, err := t.c.SendAndWait(ctx, frame, t.defaultTimeout, t.recvID...)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -530,7 +530,8 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 
 	var seq byte = 0x21
 	if !legionMode || d[3] == 0x00 {
-		c := t.c.Subscribe(ctx, t.recvID...)
+		sub := t.c.Subscribe(ctx, t.recvID...)
+		defer sub.Close()
 		if err := t.c.SendFrame(t.canID, []byte{0x30}, gocan.CANFrameType{Type: 2, Responses: 18}); err != nil {
 			return nil, 0, err
 		}
@@ -542,7 +543,7 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 			select {
 			case <-ctx.Done():
 				return nil, 0, ctx.Err()
-			case resp := <-c:
+			case resp := <-sub.Chan():
 				d2 := resp.Data()
 				if d2[0] != seq {
 					return nil, 0, fmt.Errorf("received invalid sequenced frame 0x%02X, expected 0x%02X", d2[0], seq)

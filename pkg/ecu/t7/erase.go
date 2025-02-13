@@ -19,11 +19,11 @@ func (t *Client) EraseECU(ctx context.Context) error {
 
 	progress := 0
 
-	// Send "Erase message 1" to Trionic
+	// Start EOL session
 	data[3] = 0
 	i := 0
 	for data[3] != 0x71 && i < 30 {
-		f, err := t.c.SendAndPoll(ctx, gocan.NewFrame(0x240, eraseMsg, gocan.ResponseRequired), t.defaultTimeout, 0x258)
+		f, err := t.c.SendAndWait(ctx, gocan.NewFrame(0x240, eraseMsg, gocan.ResponseRequired), t.defaultTimeout, 0x258)
 		if err != nil {
 			return err
 		}
@@ -40,12 +40,12 @@ func (t *Client) EraseECU(ctx context.Context) error {
 		return errors.New("to many tries to erase 1")
 	}
 
-	// Send "Erase message 2" to Trionic
+	// Start erase routine
 	data[3] = 0
 	i = 0
 	eraseMsg[4] = 0x53
 	for data[3] != 0x71 && i < 200 {
-		f, err := t.c.SendAndPoll(ctx, gocan.NewFrame(0x240, eraseMsg, gocan.ResponseRequired), t.defaultTimeout, 0x258)
+		f, err := t.c.SendAndWait(ctx, gocan.NewFrame(0x240, eraseMsg, gocan.ResponseRequired), t.defaultTimeout, 0x258)
 		if err != nil {
 			return err
 		}
@@ -65,7 +65,7 @@ func (t *Client) EraseECU(ctx context.Context) error {
 	i = 0
 	for data[3] != 0x7E && i < 10 {
 		time.Sleep(250 * time.Millisecond)
-		f, err := t.c.SendAndPoll(ctx, gocan.NewFrame(0x240, confirmMsg, gocan.ResponseRequired), t.defaultTimeout, 0x258)
+		f, err := t.c.SendAndWait(ctx, gocan.NewFrame(0x240, confirmMsg, gocan.ResponseRequired), t.defaultTimeout, 0x258)
 		if err != nil {
 			return err
 		}

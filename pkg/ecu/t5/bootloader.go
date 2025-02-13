@@ -144,7 +144,7 @@ func (t *Client) UploadBootLoader(ctx context.Context) error {
 					progress++
 				}
 
-				resp, err := t.c.SendAndPoll(
+				resp, err := t.c.SendAndWait(
 					ctx,
 					gocan.NewFrame(0x5, payload, gocan.ResponseRequired),
 					150*time.Millisecond,
@@ -181,7 +181,7 @@ func (t *Client) UploadBootLoader(ctx context.Context) error {
 
 func (t *Client) sendBootloaderAddressCommand(ctx context.Context, address uint32, len byte) error {
 	payload := []byte{0xA5, byte(address >> 24), byte(address >> 16), byte(address >> 8), byte(address), len, 0x00, 0x00}
-	f, err := t.c.SendAndPoll(
+	f, err := t.c.SendAndWait(
 		ctx,
 		gocan.NewFrame(0x5, payload, gocan.ResponseRequired),
 		250*time.Millisecond,
@@ -204,7 +204,7 @@ func (t *Client) sendBootVectorAddressSRAM(address uint32) error {
 
 func (t *Client) sendBootloaderDataCommand(ctx context.Context, data []byte, length byte) error {
 	frame := gocan.NewFrame(0x5, data, gocan.ResponseRequired)
-	resp, err := t.c.SendAndPoll(ctx, frame, 150*time.Millisecond, 0xC)
+	resp, err := t.c.SendAndWait(ctx, frame, 150*time.Millisecond, 0xC)
 	if err != nil {
 		return fmt.Errorf("failed SBLDC: %v", err)
 	}

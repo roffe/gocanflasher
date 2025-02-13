@@ -17,7 +17,7 @@ func (t *Client) StartDiagnosticSession(ctx context.Context) error {
 		func() error {
 			data := []byte{0x3F, 0x81, 0x00, 0x11, byte((testerID >> 8) & 0xFF), byte(testerID & 0xFF), 0x00, 0x00}
 			t.c.SendFrame(0x220, data, gocan.ResponseRequired)
-			f, err := t.c.Poll(ctx, t.defaultTimeout, 0x258)
+			f, err := t.c.Wait(ctx, t.defaultTimeout, 0x258)
 			if err != nil {
 				return err
 			}

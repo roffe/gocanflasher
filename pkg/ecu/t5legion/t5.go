@@ -69,7 +69,7 @@ func (t *Client) GetChipTypes(ctx context.Context) ([]byte, error) {
 		return chipTypes, nil
 	}
 	frame := gocan.NewFrame(0x5, []byte{0xC9, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, gocan.ResponseRequired)
-	resp, err := t.c.SendAndPoll(ctx, frame, 150*time.Millisecond, 0xC)
+	resp, err := t.c.SendAndWait(ctx, frame, 150*time.Millisecond, 0xC)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func (t *Client) GetChipTypes(ctx context.Context) ([]byte, error) {
 func (t *Client) ReadMemoryByAddress(ctx context.Context, address uint32) ([]byte, error) {
 	p := []byte{0xC7, byte(address >> 24), byte(address >> 16), byte(address >> 8), byte(address), 0x00, 0x00, 0x00}
 	frame := gocan.NewFrame(0x5, p, gocan.ResponseRequired)
-	resp, err := t.c.SendAndPoll(ctx, frame, 150*time.Millisecond, 0xC)
+	resp, err := t.c.SendAndWait(ctx, frame, 150*time.Millisecond, 0xC)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read memory by address: %v", err)
 	}

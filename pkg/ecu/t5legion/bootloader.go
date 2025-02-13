@@ -14,7 +14,7 @@ import (
 
 func (t *Client) Ping(ctx context.Context) error {
 	frame := gocan.NewFrame(0x05, []byte{0xEF, 0xBE, 0x00, 0x00, 0x00, 0x00, 0x33, 0x66}, gocan.ResponseRequired)
-	resp, err := t.c.SendAndPoll(ctx, frame, t.defaultTimeout, 0x0C)
+	resp, err := t.c.SendAndWait(ctx, frame, t.defaultTimeout, 0x0C)
 	if err != nil {
 		return errors.New("LegionPing: " + err.Error())
 	}
@@ -58,7 +58,7 @@ func (t *Client) UploadBootLoader(ctx context.Context) error {
 
 		switch payload[0] {
 		case 0xA5:
-			f, err := t.c.SendAndPoll(
+			f, err := t.c.SendAndWait(
 				ctx,
 				gocan.NewFrame(0x5, payload, gocan.ResponseRequired),
 				250*time.Millisecond,
@@ -72,7 +72,7 @@ func (t *Client) UploadBootLoader(ctx context.Context) error {
 				return fmt.Errorf("invalid response to sendBootloaderAddressCommand")
 			}
 		case 0xC1:
-			f, err := t.c.SendAndPoll(
+			f, err := t.c.SendAndWait(
 				ctx,
 				gocan.NewFrame(0x5, payload, gocan.ResponseRequired),
 				250*time.Millisecond,
@@ -86,7 +86,7 @@ func (t *Client) UploadBootLoader(ctx context.Context) error {
 				return fmt.Errorf("invalid response to sendBootloaderDataCommand: %X", d)
 			}
 		default:
-			resp, err := t.c.SendAndPoll(
+			resp, err := t.c.SendAndWait(
 				ctx,
 				gocan.NewFrame(0x5, payload, gocan.ResponseRequired),
 				150*time.Millisecond,
@@ -120,7 +120,7 @@ func (t *Client) readDataByLocalIdentifier(ctx context.Context, pci byte, addres
 	payload := []byte{pci, 0x21, length, byte(address >> 24), byte(address >> 16), byte(address >> 8), byte(address), 0x00}
 	frame := gocan.NewFrame(0x05, payload, gocan.ResponseRequired)
 	//log.Println(frame.ColorString())
-	resp, err := t.c.SendAndPoll(ctx, frame, t.defaultTimeout, 0x0C)
+	resp, err := t.c.SendAndWait(ctx, frame, t.defaultTimeout, 0x0C)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -143,7 +143,9 @@ func (t *Client) readDataByLocalIdentifier(ctx context.Context, pci byte, addres
 	copy(retData, d[4:])
 	rx_cnt += 4
 
-	c := t.c.Subscribe(ctx, 0x0C)
+	sub := t.c.Subscribe(ctx, 0x0C)
+	defer sub.Close()
+
 	if err := t.c.SendFrame(0x05, []byte{0x30}, gocan.CANFrameType{Type: 2, Responses: 19}); err != nil {
 		return nil, 0, err
 	}
@@ -151,7 +153,7 @@ func (t *Client) readDataByLocalIdentifier(ctx context.Context, pci byte, addres
 	var seq byte = 0x21
 	for rx_cnt < int(length) {
 		select {
-		case resp := <-c:
+		case resp := <-sub.Chan():
 			if resp.Data()[0] != seq {
 				return nil, 0, fmt.Errorf("got unexpected sequence number %02X, expected %02X", resp.Data()[0], seq)
 			}
@@ -172,7 +174,7 @@ func (t *Client) readDataByLocalIdentifier(ctx context.Context, pci byte, addres
 
 func (t *Client) sendBootloaderAddressCommand(ctx context.Context, address uint32, len byte) error {
 	payload := []byte{0xA5, byte(address >> 24), byte(address >> 16), byte(address >> 8), byte(address), len, 0x00, 0x00}
-	f, err := t.c.SendAndPoll(
+	f, err := t.c.SendAndWait(
 		ctx,
 		gocan.NewFrame(0x5, payload, gocan.ResponseRequired),
 		250*time.Millisecond,
@@ -197,7 +199,7 @@ func (t *Client) sendBootVectorAddressSRAM(address uint32) error {
 
 func (t *Client) sendBootloaderDataCommand(ctx context.Context, data []byte, length byte) error {
 	frame := gocan.NewFrame(0x5, data, gocan.ResponseRequired)
-	resp, err := t.c.SendAndPoll(ctx, frame, 150*time.Millisecond, 0xC)
+	resp, err := t.c.SendAndWait(ctx, frame, 150*time.Millisecond, 0xC)
 	if err != nil {
 		return fmt.Errorf("failed SBLDC: %v", err)
 	}
@@ -266,7 +268,7 @@ func (t *Client) IDemand(ctx context.Context, command Command, wish uint16) ([]b
 	var out []byte
 
 	err := retry.Do(func() error {
-		resp, err := t.c.SendAndPoll(ctx, frame, t.defaultTimeout, 0xC)
+		resp, err := t.c.SendAndWait(ctx, frame, t.defaultTimeout, 0xC)
 		if err != nil {
 			return err
 		}

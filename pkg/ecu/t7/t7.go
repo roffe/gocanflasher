@@ -55,7 +55,7 @@ func (t *Client) DataInitialization(ctx context.Context) error {
 
 	err := retry.Do(
 		func() error {
-			resp, err := t.c.SendAndPoll(ctx, gocan.NewFrame(0x220, []byte{0x3F, 0x81, 0x00, 0x11, 0x02, 0x40, 0x00, 0x00}, gocan.ResponseRequired), t.defaultTimeout, 0x238)
+			resp, err := t.c.SendAndWait(ctx, gocan.NewFrame(0x220, []byte{0x3F, 0x81, 0x00, 0x11, 0x02, 0x40, 0x00, 0x00}, gocan.ResponseRequired), t.defaultTimeout, 0x238)
 			if err != nil {
 				return fmt.Errorf("%v", err)
 			}
@@ -105,7 +105,7 @@ func (t *Client) GetHeader(ctx context.Context, id byte) (string, error) {
 	var answer []byte
 	var length int
 	for i := 0; i < 10; i++ {
-		f, err := t.c.Poll(ctx, t.defaultTimeout, 0x258)
+		f, err := t.c.Wait(ctx, t.defaultTimeout, 0x258)
 		if err != nil {
 			return "", err
 		}
@@ -165,7 +165,7 @@ func (t *Client) letMeIn(ctx context.Context, method int) (bool, error) {
 	msg := []byte{0x40, 0xA1, 0x02, 0x27, 0x05, 0x00, 0x00, 0x00}
 	msgReply := []byte{0x40, 0xA1, 0x04, 0x27, 0x06, 0x00, 0x00, 0x00}
 
-	f, err := t.c.SendAndPoll(ctx, gocan.NewFrame(0x240, msg, gocan.ResponseRequired), t.defaultTimeout, 0x258)
+	f, err := t.c.SendAndWait(ctx, gocan.NewFrame(0x240, msg, gocan.ResponseRequired), t.defaultTimeout, 0x258)
 	if err != nil {
 		return false, fmt.Errorf("request seed: %v", err)
 
@@ -179,7 +179,7 @@ func (t *Client) letMeIn(ctx context.Context, method int) (bool, error) {
 	msgReply[5] = byte(int(k) >> 8 & int(0xFF))
 	msgReply[6] = byte(k) & 0xFF
 
-	f2, err := t.c.SendAndPoll(ctx, gocan.NewFrame(0x240, msgReply, gocan.ResponseRequired), t.defaultTimeout, 0x258)
+	f2, err := t.c.SendAndWait(ctx, gocan.NewFrame(0x240, msgReply, gocan.ResponseRequired), t.defaultTimeout, 0x258)
 	if err != nil {
 		return false, fmt.Errorf("send seed: %v", err)
 
@@ -222,7 +222,7 @@ func (t *Client) LetMeTry(ctx context.Context, key1, key2 int) bool {
 	msg := []byte{0x40, 0xA1, 0x02, 0x27, 0x05, 0x00, 0x00, 0x00}
 	msgReply := []byte{0x40, 0xA1, 0x04, 0x27, 0x06, 0x00, 0x00, 0x00}
 
-	f, err := t.c.SendAndPoll(ctx, gocan.NewFrame(0x240, msg, gocan.ResponseRequired), t.defaultTimeout, 0x258)
+	f, err := t.c.SendAndWait(ctx, gocan.NewFrame(0x240, msg, gocan.ResponseRequired), t.defaultTimeout, 0x258)
 	if err != nil {
 		log.Println(err)
 		return false
@@ -237,7 +237,7 @@ func (t *Client) LetMeTry(ctx context.Context, key1, key2 int) bool {
 	msgReply[5] = byte(int(k) >> 8 & int(0xFF))
 	msgReply[6] = byte(k) & 0xFF
 
-	f2, err := t.c.SendAndPoll(ctx, gocan.NewFrame(0x240, msgReply, gocan.ResponseRequired), t.defaultTimeout, 0x258)
+	f2, err := t.c.SendAndWait(ctx, gocan.NewFrame(0x240, msgReply, gocan.ResponseRequired), t.defaultTimeout, 0x258)
 	if err != nil {
 		log.Println(err)
 		return false

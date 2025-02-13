@@ -33,5 +33,5 @@ func (m *mainWindow) initCAN(ctx context.Context) (*gocan.Client, error) {
 		return nil, err
 	}
 
-	return gocan.New(ctx, dev)
+	return gocan.NewClient(ctx, dev)
 }

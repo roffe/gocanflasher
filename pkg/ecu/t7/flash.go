@@ -73,9 +73,9 @@ func (t *Client) FlashECU(ctx context.Context, bin []byte) error {
 		return err
 	}
 
-	if err := t.c.Adapter().SetFilter([]uint32{0x258}); err != nil {
-		t.cfg.OnError(err)
-	}
+	//if err := t.c.Adapter().SetFilter([]uint32{0x258}); err != nil {
+	//	t.cfg.OnError(err)
+	//}
 
 	t.cfg.OnProgress(-float64(0x80000))
 	t.cfg.OnMessage("Flashing ECU")
@@ -117,7 +117,7 @@ func (t *Client) FlashECU(ctx context.Context, bin []byte) error {
 		}
 
 	}
-	end, err := t.c.SendAndPoll(ctx, gocan.NewFrame(0x240, []byte{0x40, 0xA1, 0x01, 0x37, 0x00, 0x00, 0x00, 0x00}, gocan.ResponseRequired), t.defaultTimeout, 0x258)
+	end, err := t.c.SendAndWait(ctx, gocan.NewFrame(0x240, []byte{0x40, 0xA1, 0x01, 0x37, 0x00, 0x00, 0x00, 0x00}, gocan.ResponseRequired), t.defaultTimeout, 0x258)
 	if err != nil {
 		return fmt.Errorf("error waiting for data transfer exit reply: %v", err)
 	}
@@ -137,7 +137,7 @@ func (t *Client) FlashECU(ctx context.Context, bin []byte) error {
 // send request "Download - tool to module" to Trionic"
 func (t *Client) writeJump(ctx context.Context, offset, length int) error {
 	jumpMsg := []byte{0x41, 0xA1, 0x08, 0x34, byte(offset >> 16), byte(offset >> 8), byte(offset), 0x00}
-	jumpMsg2 := []byte{0x00, 0xA1, byte(length >> 16), byte(length >> 8), byte(length), 0x00, 0x00, 0x00}
+	jumpMsg2 := []byte{0x00, 0xA1, byte(length >> 16), byte(length >> 8), byte(length) /*, 0x00, 0x00, 0x00*/}
 
 	log.Printf("writeJump: offset=%d, length=%d", offset, length)
 	log.Printf("writeJump: jumpMsg=%X", jumpMsg)
@@ -146,7 +146,7 @@ func (t *Client) writeJump(ctx context.Context, offset, length int) error {
 	}
 	log.Printf("writeJump: jumpMsg2=%X", jumpMsg2)
 
-	f, err := t.c.SendAndPoll(ctx, gocan.NewFrame(0x240, jumpMsg2, gocan.ResponseRequired), t.defaultTimeout, 0x258)
+	f, err := t.c.SendAndWait(ctx, gocan.NewFrame(0x240, jumpMsg2, gocan.ResponseRequired), t.defaultTimeout, 0x258)
 	if err != nil {
 		return fmt.Errorf("failed to enable request download #2")
 	}
@@ -215,7 +215,7 @@ func (t *Client) writeRange(ctx context.Context, start, end int, bin []byte) err
 		t.c.SendFrame(0x240, data, gocan.ResponseRequired)
 	}
 
-	resp, err := t.c.Poll(ctx, t.defaultTimeout, 0x258)
+	resp, err := t.c.Wait(ctx, t.defaultTimeout, 0x258)
 	if err != nil {
 		return fmt.Errorf("error writing 0x%X - 0x%X was at pos 0x%X: %v", start, end, binPos, err)
 	}

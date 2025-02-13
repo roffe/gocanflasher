@@ -3,7 +3,10 @@ package t8sec
 func CalculateAccessKey(seed []byte, level byte) (byte, byte) {
 	val := int(seed[0])<<8 | int(seed[1])
 
-	key := convertSeed(val)
+	key := func(seed int) int {
+		key := seed>>5 | seed<<11
+		return (key + 0xB988) & 0xFFFF
+	}(val)
 
 	switch level {
 	case 0xFB:

@@ -20,7 +20,7 @@ func (t *Client) EraseECU(ctx context.Context) error {
 
 	cmd := []byte{0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 	frame := gocan.NewFrame(0x005, cmd, gocan.ResponseRequired)
-	resp, err := t.c.SendAndPoll(ctx, frame, 20*time.Second, 0xC)
+	resp, err := t.c.SendAndWait(ctx, frame, 20*time.Second, 0xC)
 	if err != nil {
 		return err
 	}
