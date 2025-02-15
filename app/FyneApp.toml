@@ -1,7 +1,7 @@
 Website = "https://roffe.nu/"
 
 [Details]
-  Icon = "./ECU.png"
+  Icon = "Icon.png"
   Name = "GoCANFlasher"
   ID = "com.roffe.gcf"
   Version = "1.0.1"

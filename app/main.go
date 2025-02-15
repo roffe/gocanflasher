@@ -17,7 +17,7 @@ import (
 	_ "github.com/roffe/gocanflasher/pkg/ecu/t8mcp"
 )
 
-//go:embed ECU.png
+//go:embed Icon.png
 var appIconBytes []byte
 
 var appIcon = fyne.NewStaticResource("ecu.png", appIconBytes)

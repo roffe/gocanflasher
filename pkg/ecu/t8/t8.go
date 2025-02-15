@@ -82,7 +82,7 @@ func (t *Client) EraseECU(ctx context.Context) error {
 }
 
 func (t *Client) RequestSecurityAccess(ctx context.Context) error {
-	log.Println("Requesting security access")
+	log.Println("Requesting t8 security access")
 	return t.gm.RequestSecurityAccess(ctx, 0x01, 0, t8sec.CalculateAccessKey)
 }
 

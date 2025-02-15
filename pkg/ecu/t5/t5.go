@@ -12,7 +12,7 @@ import (
 
 func init() {
 	ecu.Register(&ecu.EcuInfo{
-		Name:    "Trionic 5",
+		Name:    "T5",
 		NewFunc: New,
 		CANRate: 615.384,
 		Filter:  []uint32{0x00, 0x05, 0x06, 0x0C},

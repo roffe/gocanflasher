@@ -91,7 +91,7 @@ func (t *Client) bootstrapPreFlight(ctx context.Context) error {
 
 	t.gm.TesterPresentNoResponseAllowed()
 
-	t.cfg.OnMessage("Requesting security access")
+	t.cfg.OnMessage("Requesting t8 security access")
 
 	if err := t.gm.RequestSecurityAccess(ctx, 0x01, 0, t8sec.CalculateAccessKey); err != nil {
 		return err

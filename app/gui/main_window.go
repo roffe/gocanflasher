@@ -98,7 +98,7 @@ func createLogList() *widget.List {
 
 func (m *mainWindow) layout() *container.Split {
 
-	left := container.New(layout.NewMaxLayout(), m.log)
+	left := container.New(layout.NewStackLayout(), m.log)
 	right := container.NewVBox(
 		widget.NewLabel(""),
 		m.wizzardBTN,

@@ -48,6 +48,7 @@ func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
 				t.cfg.OnError(fmt.Errorf("retrying to read memory by address: %w", err))
 			}),
 			retry.Attempts(3),
+			retry.LastErrorOnly(true),
 		)
 		if err != nil {
 			return nil, err
@@ -71,9 +72,10 @@ func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
 				return nil
 			},
 			retry.OnRetry(func(n uint, err error) {
-				t.cfg.OnError(fmt.Errorf("retrying to read memory by address: %w", err))
+				t.cfg.OnError(fmt.Errorf("t5 retrying to read memory by address: %w", err))
 			}),
 			retry.Attempts(3),
+			retry.LastErrorOnly(true),
 		)
 		if err != nil {
 			return nil, err

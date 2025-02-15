@@ -34,20 +34,23 @@ type Client struct {
 }
 
 func New(c *gocan.Client, cfg *ecu.Config, canID uint32, recvID ...uint32) *Client {
-	var ifl uint16 = 0x20
-	switch strings.ToLower(c.Adapter().Name()) {
-	case "tech2":
+	var ifl uint16 = 200
+	lower := strings.ToLower(c.Adapter().Name())
+	switch {
+	case strings.HasPrefix(lower, "tech2"):
 		ifl = 580
-	case "just4trionic":
+	case lower == "just4trionic":
 		ifl = 580
-	case "stn":
-		ifl = 32
-	case "canusb":
-		ifl = 0x30
-	case "combiadapter":
+	case strings.HasPrefix(lower, "stn"):
+		ifl = 60
+	case lower == "canusb":
+		ifl = 50
+	case lower == "combiadapter":
 		ifl = 680
-	case "yaca":
+	case lower == "yaca":
 		ifl = 2
+	case strings.HasPrefix(lower, "canlib"):
+		ifl = 40
 	}
 	cfg.OnMessage("Using interframe latency " + strconv.Itoa(int(ifl)) + " for " + c.Adapter().Name())
 
@@ -188,7 +191,7 @@ func (t *Client) Ping(ctx context.Context) error {
 func (t *Client) Exit(ctx context.Context) error {
 	payload := []byte{0x01, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
 	frame := gocan.NewFrame(t.canID, payload, gocan.ResponseRequired)
-	resp, err := t.c.SendAndWait(ctx, frame, t.defaultTimeout, t.recvID...)
+	resp, err := t.c.SendAndWait(ctx, frame, t.defaultTimeout*2, t.recvID...)
 	if err != nil {
 		return errors.New("LegionExit: " + err.Error())
 	}
@@ -342,6 +345,7 @@ func (t *Client) IDemand(ctx context.Context, command Command, wish uint16) ([]b
 
 func (t *Client) ReadFlash(ctx context.Context, device byte, lastAddress int, z22se bool) ([]byte, error) {
 	if !t.legionRunning {
+		t.cfg.OnMessage("Legion not running, bootstrapping")
 		if err := t.Bootstrap(ctx); err != nil {
 			return nil, err
 		}
