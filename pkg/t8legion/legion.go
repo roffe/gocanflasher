@@ -1,4 +1,4 @@
-package legion
+package t8legion
 
 import (
 	"bytes"
@@ -37,6 +37,8 @@ func New(c *gocan.Client, cfg *ecu.Config, canID uint32, recvID ...uint32) *Clie
 	var ifl uint16 = 200
 	lower := strings.ToLower(c.Adapter().Name())
 	switch {
+	case strings.HasPrefix(lower, "txbridge"):
+		ifl = 1100
 	case strings.HasPrefix(lower, "tech2"):
 		ifl = 580
 	case lower == "just4trionic":
@@ -50,13 +52,13 @@ func New(c *gocan.Client, cfg *ecu.Config, canID uint32, recvID ...uint32) *Clie
 	case lower == "yaca":
 		ifl = 2
 	case strings.HasPrefix(lower, "canlib"):
-		ifl = 40
+		ifl = 10
 	}
 	cfg.OnMessage("Using interframe latency " + strconv.Itoa(int(ifl)) + " for " + c.Adapter().Name())
 
 	return &Client{
 		c:                 c,
-		defaultTimeout:    150 * time.Millisecond,
+		defaultTimeout:    200 * time.Millisecond,
 		gm:                gmlan.New(c, canID, recvID...),
 		canID:             canID,
 		recvID:            recvID,
@@ -90,9 +92,8 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 	r := bytes.NewReader(bootloaderBytes)
 
 	progress := 0
-
 	pp := 0
-	for i := 0; i < noTransfers; i++ {
+	for range noTransfers {
 		pp++
 		if pp == 10 {
 			t.gm.TesterPresentNoResponseAllowed()
@@ -102,7 +103,7 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 			return err
 		}
 		seq = 0x21
-		for j := 0; j <= 33; j++ {
+		for j := 0; j <= 0x21; j++ {
 			payload := []byte{seq, 0, 0, 0, 0, 0, 0, 0}
 			n, err := r.Read(payload[1:])
 			if err != nil && err != io.EOF {
@@ -122,6 +123,8 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 				seq = 0x20
 			}
 			t.cfg.OnProgress(float64(progress))
+			time.Sleep(2 * time.Millisecond)
+
 		}
 		resp, err := t.c.Wait(ctx, t.defaultTimeout*5, t.recvID...)
 		if err != nil {
@@ -174,35 +177,39 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 
 func (t *Client) Ping(ctx context.Context) error {
 	frame := gocan.NewFrame(t.canID, []byte{0xEF, 0xBE, 0x00, 0x00, 0x00, 0x00, 0x33, 0x66}, gocan.ResponseRequired)
-	resp, err := t.c.SendAndWait(ctx, frame, t.defaultTimeout, t.recvID...)
+	resp, err := t.c.SendAndWait(ctx, frame, 50*time.Millisecond, t.recvID...)
 	if err != nil {
-		return errors.New("LegionPing: " + err.Error())
-	}
-	if err := gmlan.CheckErr(resp); err != nil {
 		return errors.New("LegionPing: " + err.Error())
 	}
 	d := resp.Data()
 	if d[0] == 0xDE && d[1] == 0xAD { //&& d[2] == 0xF0 && d[3] == 0x0F {
 		return nil
 	}
+	if err := gmlan.CheckErr(resp); err != nil {
+		return errors.New("LegionPing: " + err.Error())
+	}
 	return errors.New("LegionPing: no response")
 }
 
 func (t *Client) Exit(ctx context.Context) error {
-	payload := []byte{0x01, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}
+	payload := make([]byte, 2)
+	payload[0] = 0x01
+	payload[1] = 0x20
 	frame := gocan.NewFrame(t.canID, payload, gocan.ResponseRequired)
 	resp, err := t.c.SendAndWait(ctx, frame, t.defaultTimeout*2, t.recvID...)
 	if err != nil {
 		return errors.New("LegionExit: " + err.Error())
 	}
+	d := resp.Data()
+	if d[0] == 0x01 && d[1] == 0x60 {
+		return nil
+	}
+
 	if err := gmlan.CheckErr(resp); err != nil {
 		return errors.New("LegionExit: " + err.Error())
 	}
-	d := resp.Data()
-	if d[0] != 0x01 || (d[1] != 0x50 && d[1] != 0x60) {
-		return errors.New("LegionExit: invalid response")
-	}
-	return nil
+
+	return fmt.Errorf("LegionExit: invalid response %X", d)
 }
 
 // Set inter frame latency
@@ -286,7 +293,7 @@ func (t *Client) IDemand(ctx context.Context, command Command, wish uint16) ([]b
 	err := retry.Do(func() error {
 		resp, err := t.c.SendAndWait(ctx, frame, t.defaultTimeout, t.recvID...)
 		if err != nil {
-			return err
+			return fmt.Errorf("IDemand: %w", err)
 		}
 		d := resp.Data()
 
@@ -345,10 +352,7 @@ func (t *Client) IDemand(ctx context.Context, command Command, wish uint16) ([]b
 
 func (t *Client) ReadFlash(ctx context.Context, device byte, lastAddress int, z22se bool) ([]byte, error) {
 	if !t.legionRunning {
-		t.cfg.OnMessage("Legion not running, bootstrapping")
-		if err := t.Bootstrap(ctx); err != nil {
-			return nil, err
-		}
+		return nil, fmt.Errorf("legion not running")
 	}
 	buf := make([]byte, lastAddress)
 	bufpnt := 0
@@ -508,7 +512,7 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 	frame := gocan.NewFrame(t.canID, payload, gocan.ResponseRequired)
 	resp, err := t.c.SendAndWait(ctx, frame, t.defaultTimeout, t.recvID...)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, fmt.Errorf("ReadDataByLocalIdentifier: %w", err)
 	}
 
 	if err := checkErr(resp); err != nil {
@@ -566,7 +570,7 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 					seq = 0x20
 				}
 			case <-time.After(t.defaultTimeout * 2):
-				return nil, 0, errors.New("timeout waiting for data")
+				return nil, 0, errors.New("ReadDataByLocalIdentifier: timeout waiting for data")
 			}
 		}
 	} else {

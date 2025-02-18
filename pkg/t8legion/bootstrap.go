@@ -1,7 +1,9 @@
-package legion
+package t8legion
 
 import (
 	"context"
+	"errors"
+	"log"
 	"time"
 
 	"github.com/avast/retry-go"
@@ -14,21 +16,28 @@ import (
 
 func (t *Client) Alive(ctx context.Context) bool {
 
-	t.cfg.OnMessage("Checking if Legion is running")
+	t.cfg.OnMessage("checking if Legion is running")
 
 	err := retry.Do(func() error {
 		err := t.Ping(ctx)
 		if err != nil {
 			return err
 		}
-		t.cfg.OnMessage("Legion is ready")
+		t.cfg.OnMessage("legion is running")
 		t.legionRunning = true
 		return nil
 	},
+		retry.OnRetry(func(n uint, err error) {
+			log.Printf("retrying %d: %s", n, err)
+		}),
 		retry.Attempts(3),
+		retry.Delay(200*time.Millisecond),
 		retry.Context(ctx),
 		retry.LastErrorOnly(true),
 	)
+	if err != nil {
+		t.cfg.OnError(err)
+	}
 	return err == nil
 }
 
@@ -37,24 +46,25 @@ func (t *Client) Bootstrap(ctx context.Context) error {
 		if err := t.bootstrapPreFlight(ctx); err != nil {
 			return err
 		}
+		time.Sleep(100 * time.Millisecond)
 		if err := t.UploadBootloader(ctx); err != nil {
 			return err
 		}
-
-		t.cfg.OnMessage("Starting bootloader")
-
+		t.cfg.OnMessage("starting bootloader")
 		if err := t.StartBootloader(ctx, 0x102400); err != nil {
 			return err
 		}
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(400 * time.Millisecond)
 		t.legionRunning = t.Alive(ctx)
 	}
 
 	if t.legionRunning {
-		t.cfg.OnMessage("Legion is running, enabling high speed mode")
+		t.cfg.OnMessage("enabling high speed mode")
 		if err := t.EnableHighSpeed(ctx); err != nil {
 			return err
 		}
+	} else {
+		return errors.New("legion is not running")
 	}
 
 	return nil
@@ -90,13 +100,9 @@ func (t *Client) bootstrapPreFlight(ctx context.Context) error {
 	time.Sleep(50 * time.Millisecond)
 
 	t.gm.TesterPresentNoResponseAllowed()
-
-	t.cfg.OnMessage("Requesting t8 security access")
-
 	if err := t.gm.RequestSecurityAccess(ctx, 0x01, 0, t8sec.CalculateAccessKey); err != nil {
 		return err
 	}
 
-	time.Sleep(50 * time.Millisecond)
 	return nil
 }

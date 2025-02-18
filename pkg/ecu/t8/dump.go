@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/roffe/gocanflasher/pkg/legion"
+	"github.com/roffe/gocanflasher/pkg/t8legion"
 )
 
 func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
@@ -19,14 +19,14 @@ func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
 	t.cfg.OnMessage("Dumping ECU")
 	start := time.Now()
 
-	bin, err := t.legion.ReadFlash(ctx, legion.EcuByte_T8, 0x100000, false)
+	bin, err := t.legion.ReadFlash(ctx, t8legion.EcuByte_T8, 0x100000, false)
 	if err != nil {
 		return nil, err
 	}
 
 	t.cfg.OnMessage("Verifying md5..")
 
-	ecuMD5bytes, err := t.legion.IDemand(ctx, legion.GetTrionic8MD5, 0x00)
+	ecuMD5bytes, err := t.legion.IDemand(ctx, t8legion.GetTrionic8MD5, 0x00)
 	if err != nil {
 		return nil, err
 	}

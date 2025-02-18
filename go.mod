@@ -8,7 +8,7 @@ replace github.com/roffe/ecusymbol => C:\Users\flejd\go\src\github.com\roffe\ecu
 
 require (
 	github.com/avast/retry-go v3.0.0+incompatible
-	github.com/roffe/gocan v1.0.0
+	github.com/roffe/gocan v1.0.1
 )
 
 require (

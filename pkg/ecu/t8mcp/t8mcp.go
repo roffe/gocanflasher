@@ -11,8 +11,8 @@ import (
 	"github.com/roffe/gocan"
 	"github.com/roffe/gocanflasher/pkg/ecu"
 	"github.com/roffe/gocanflasher/pkg/ecu/t8util"
-	"github.com/roffe/gocanflasher/pkg/legion"
 	"github.com/roffe/gocanflasher/pkg/model"
+	"github.com/roffe/gocanflasher/pkg/t8legion"
 )
 
 func init() {
@@ -28,7 +28,7 @@ type Client struct {
 	c              *gocan.Client
 	cfg            *ecu.Config
 	defaultTimeout time.Duration
-	legion         *legion.Client
+	legion         *t8legion.Client
 }
 
 func New(c *gocan.Client, cfg *ecu.Config) ecu.Client {
@@ -36,7 +36,7 @@ func New(c *gocan.Client, cfg *ecu.Config) ecu.Client {
 		c:              c,
 		cfg:            ecu.LoadConfig(cfg),
 		defaultTimeout: 150 * time.Millisecond,
-		legion:         legion.New(c, cfg, 0x7e0, 0x7e8),
+		legion:         t8legion.New(c, cfg, 0x7e0, 0x7e8),
 	}
 	return t
 }
@@ -50,7 +50,7 @@ func (t *Client) Info(ctx context.Context) ([]model.HeaderResult, error) {
 		return nil, err
 	}
 
-	_, err := t.legion.IDemand(ctx, legion.StartSecondaryBootloader, 0)
+	_, err := t.legion.IDemand(ctx, t8legion.StartSecondaryBootloader, 0)
 	if err != nil {
 		return nil, errors.New("failed to start secondary bootloader")
 	}
@@ -79,7 +79,7 @@ func (t *Client) FlashECU(ctx context.Context, bin []byte) error {
 	t.cfg.OnProgress(0)
 	for i := 1; i <= 9; i++ {
 		lmd5 := t8util.GetPartitionMD5(bin, 6, i)
-		md5, err := t.legion.GetMD5(ctx, legion.GetTrionic8MCPMD5, uint16(i))
+		md5, err := t.legion.GetMD5(ctx, t8legion.GetTrionic8MCPMD5, uint16(i))
 		if err != nil {
 			return err
 		}
@@ -96,7 +96,7 @@ func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
 		return nil, err
 	}
 
-	_, err := t.legion.IDemand(ctx, legion.StartSecondaryBootloader, 0)
+	_, err := t.legion.IDemand(ctx, t8legion.StartSecondaryBootloader, 0)
 	if err != nil {
 		return nil, errors.New("failed to start secondary bootloader")
 	}
@@ -104,12 +104,12 @@ func (t *Client) DumpECU(ctx context.Context) ([]byte, error) {
 
 	start := time.Now()
 
-	bin, err := t.legion.ReadFlash(ctx, legion.EcuByte_MCP, 0x40100, false)
+	bin, err := t.legion.ReadFlash(ctx, t8legion.EcuByte_MCP, 0x40100, false)
 	if err != nil {
 		return nil, err
 	}
 
-	ecumd5bytes, err := t.legion.IDemand(ctx, legion.GetTrionic8MCPMD5, 0x00)
+	ecumd5bytes, err := t.legion.IDemand(ctx, t8legion.GetTrionic8MCPMD5, 0x00)
 	if err != nil {
 		return nil, err
 	}

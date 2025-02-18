@@ -8,8 +8,8 @@ replace github.com/roffe/ecusymbol => C:\Users\flejd\go\src\github.com\roffe\ecu
 
 require (
 	fyne.io/fyne/v2 v2.5.4
-	github.com/roffe/gocan v0.0.0-20231114233324-abd50f80143b
-	github.com/roffe/gocanflasher v0.0.0-20250213230444-21112500ff5b
+	github.com/roffe/gocan v1.0.1
+	github.com/roffe/gocanflasher v0.0.0-20250215121001-4a56a746d686
 )
 
 require (

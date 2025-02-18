@@ -7,12 +7,13 @@ import (
 	"log"
 	"time"
 
+	"github.com/avast/retry-go"
 	"github.com/roffe/gocan"
 	"github.com/roffe/gocan/pkg/gmlan"
 	"github.com/roffe/gocanflasher/pkg/ecu"
 	"github.com/roffe/gocanflasher/pkg/ecu/t8sec"
 	"github.com/roffe/gocanflasher/pkg/ecu/t8util"
-	"github.com/roffe/gocanflasher/pkg/legion"
+	"github.com/roffe/gocanflasher/pkg/t8legion"
 )
 
 func init() {
@@ -27,7 +28,7 @@ func init() {
 type Client struct {
 	c              *gocan.Client
 	defaultTimeout time.Duration
-	legion         *legion.Client
+	legion         *t8legion.Client
 	gm             *gmlan.Client
 	cfg            *ecu.Config
 }
@@ -37,7 +38,7 @@ func New(c *gocan.Client, cfg *ecu.Config) ecu.Client {
 		c:              c,
 		cfg:            ecu.LoadConfig(cfg),
 		defaultTimeout: 150 * time.Millisecond,
-		legion:         legion.New(c, cfg, 0x7e0, 0x7e8),
+		legion:         t8legion.New(c, cfg, 0x7e0, 0x7e8),
 		gm:             gmlan.New(c, 0x7e0, 0x5e8, 0x7e8),
 	}
 	return t
@@ -49,8 +50,16 @@ func (t *Client) PrintECUInfo(ctx context.Context) error {
 
 func (t *Client) ResetECU(ctx context.Context) error {
 	if t.legion.IsRunning() {
-		if err := t.legion.Exit(ctx); err != nil {
-			return err
+		err := retry.Do(func() error {
+			return t.legion.Exit(ctx)
+		},
+			retry.Attempts(3),
+			retry.Delay(400*time.Millisecond),
+			retry.Context(ctx),
+			retry.LastErrorOnly(true),
+		)
+		if err != nil {
+			return fmt.Errorf("failed to exit legion: %w", err)
 		}
 	}
 	return nil
@@ -65,7 +74,7 @@ func (t *Client) FlashECU(ctx context.Context, bin []byte) error {
 	t.cfg.OnProgress(0)
 	for i := 1; i <= 9; i++ {
 		lmd5 := t8util.GetPartitionMD5(bin, 6, i)
-		md5, err := t.legion.GetMD5(ctx, legion.GetTrionic8MD5, uint16(i))
+		md5, err := t.legion.GetMD5(ctx, t8legion.GetTrionic8MD5, uint16(i))
 		if err != nil {
 			return err
 		}
