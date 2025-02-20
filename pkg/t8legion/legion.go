@@ -39,18 +39,20 @@ func New(c *gocan.Client, cfg *ecu.Config, canID uint32, recvID ...uint32) *Clie
 	switch {
 	case strings.HasPrefix(lower, "txbridge"):
 		ifl = 1100
-	case strings.HasPrefix(lower, "tech2"):
+	case strings.Contains(lower, "tech2"):
 		ifl = 580
 	case lower == "just4trionic":
 		ifl = 580
 	case strings.HasPrefix(lower, "stn"):
 		ifl = 60
-	case lower == "canusb":
+	case strings.HasPrefix(lower, "canusb"):
 		ifl = 50
 	case lower == "combiadapter":
 		ifl = 680
+	case strings.HasPrefix(lower, "j2537"):
+		ifl = 100
 	case lower == "yaca":
-		ifl = 2
+		ifl = 10
 	case strings.HasPrefix(lower, "canlib"):
 		ifl = 10
 	}
@@ -123,12 +125,9 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 				seq = 0x20
 			}
 			t.cfg.OnProgress(float64(progress))
-			time.Sleep(2 * time.Millisecond)
-
 		}
-		resp, err := t.c.Wait(ctx, t.defaultTimeout*5, t.recvID...)
+		resp, err := t.c.Wait(ctx, t.defaultTimeout*2, t.recvID...)
 		if err != nil {
-
 			return err
 		}
 		if err := gmlan.CheckErr(resp); err != nil {

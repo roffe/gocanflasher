@@ -52,9 +52,8 @@ func (t *Client) Bootstrap(ctx context.Context) error {
 		}
 		t.cfg.OnMessage("starting bootloader")
 		if err := t.StartBootloader(ctx, 0x102400); err != nil {
-			return err
+			t.cfg.OnError(err)
 		}
-		time.Sleep(400 * time.Millisecond)
 		t.legionRunning = t.Alive(ctx)
 	}
 
