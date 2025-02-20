@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/avast/retry-go"
+	"github.com/avast/retry-go/v4"
 	"github.com/roffe/gocan"
 	"github.com/roffe/gocan/pkg/gmlan"
 	"github.com/roffe/gocanflasher/pkg/ecu"

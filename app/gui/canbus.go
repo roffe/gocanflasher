@@ -25,9 +25,6 @@ func (m *mainWindow) initCAN(ctx context.Context) (*gocan.Client, error) {
 			CANFilter:    ecu.Filters(state.ecuType),
 			PrintVersion: true,
 			OnMessage:    m.output,
-			OnError: func(err error) {
-				m.output(fmt.Sprintf("Error: %s", err.Error()))
-			},
 		})
 	if err != nil {
 		return nil, err

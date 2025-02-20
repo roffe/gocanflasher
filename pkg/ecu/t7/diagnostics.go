@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/avast/retry-go"
+	"github.com/avast/retry-go/v4"
 	"github.com/roffe/gocan"
 )
 

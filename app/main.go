@@ -7,7 +7,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"github.com/roffe/gocanflasher/gui"
+	"github.com/roffe/gocanflasher/app/gui"
 
 	// Import ecu packages
 	_ "github.com/roffe/gocanflasher/pkg/ecu/t5"

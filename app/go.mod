@@ -1,6 +1,6 @@
 module github.com/roffe/gocanflasher/app
 
-go 1.23
+go 1.24.0
 
 replace github.com/roffe/gocan => C:\Users\flejd\go\src\github.com\roffe\gocan
 
@@ -8,7 +8,7 @@ replace github.com/roffe/ecusymbol => C:\Users\flejd\go\src\github.com\roffe\ecu
 
 require (
 	fyne.io/fyne/v2 v2.5.4
-	github.com/roffe/gocan v1.0.1
+	github.com/roffe/gocan v1.0.2
 	github.com/roffe/gocanflasher v0.0.0-20250215121001-4a56a746d686
 )
 
@@ -25,6 +25,8 @@ require (
 	github.com/mdlayher/socket v0.5.1 // indirect
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.4.0 // indirect
+	github.com/roffe/gocanlib v1.0.1 // indirect
+	github.com/roffe/gocanusb v1.0.0 // indirect
 	github.com/rymdport/portal v0.3.0 // indirect
 	go.einride.tech/can v0.12.1 // indirect
 	golang.org/x/mod v0.23.0 // indirect
