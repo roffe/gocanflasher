@@ -6,7 +6,7 @@ go 1.24.0
 
 require (
 	github.com/avast/retry-go/v4 v4.6.0
-	github.com/roffe/gocan v1.0.2
+	github.com/roffe/gocan v1.1.0
 )
 
 require (
