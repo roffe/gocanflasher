@@ -83,17 +83,14 @@ func (t *Client) readMemoryByAddress(ctx context.Context, address, length int) (
 	if err != nil {
 		return nil, err
 	}
-	d := f.Data()
-	t.Ack(d[0], gocan.Outgoing)
-
-	if d[3] != 0x6C || d[4] != 0xF0 {
+	t.Ack(f.Data[0], gocan.Outgoing)
+	if f.Data[3] != 0x6C || f.Data[4] != 0xF0 {
 		return nil, fmt.Errorf("failed to jump to 0x%X got response: %s", address, f.String())
 	}
 	b, err := t.recvData(ctx, length)
 	if err != nil {
 		return nil, err
 	}
-
 	return b, nil
 }
 
@@ -118,29 +115,28 @@ outer:
 			return nil, fmt.Errorf("timeout")
 
 		case f := <-sub.Chan():
-			d := f.Data()
-			if d[0]&0x40 == 0x40 {
-				payloadLeft = int(d[2]) - 2 // subtract two non-payload bytes
+			if f.Data[0]&0x40 == 0x40 {
+				payloadLeft = int(f.Data[2]) - 2 // subtract two non-payload bytes
 
 				if payloadLeft > 0 && receivedBytes < length {
-					out.WriteByte(d[5])
+					out.WriteByte(f.Data[5])
 					receivedBytes++
 					payloadLeft--
 				}
 				if payloadLeft > 0 && receivedBytes < length {
-					out.WriteByte(d[6])
+					out.WriteByte(f.Data[6])
 					receivedBytes++
 					payloadLeft--
 				}
 				if payloadLeft > 0 && receivedBytes < length {
-					out.WriteByte(d[7])
+					out.WriteByte(f.Data[7])
 					receivedBytes++
 					payloadLeft--
 				}
 			} else {
 				for i := 0; i < 6; i++ {
 					if receivedBytes < length {
-						out.WriteByte(d[2+i])
+						out.WriteByte(f.Data[2+i])
 						receivedBytes++
 						payloadLeft--
 						if payloadLeft == 0 {
@@ -149,11 +145,11 @@ outer:
 					}
 				}
 			}
-			if d[0] == 0x80 || d[0] == 0xC0 {
-				t.Ack(d[0], gocan.Outgoing)
+			if f.Data[0] == 0x80 || f.Data[0] == 0xC0 {
+				t.Ack(f.Data[0], gocan.Outgoing)
 				break outer
 			} else {
-				t.Ack(d[0], gocan.ResponseRequired)
+				t.Ack(f.Data[0], gocan.ResponseRequired)
 			}
 		}
 	}
@@ -166,7 +162,6 @@ func (t *Client) endDownloadMode(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("end download mode: %v", err)
 	}
-	d := resp.Data()
-	t.Ack(d[0], gocan.Outgoing)
+	t.Ack(resp.Data[0], gocan.Outgoing)
 	return nil
 }

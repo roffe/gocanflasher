@@ -72,11 +72,10 @@ func (t *Client) GetChipTypes(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	d := resp.Data()
-	if d[0] != 0xC9 || d[1] != 0x00 {
+	if resp.Data[0] != 0xC9 || resp.Data[1] != 0x00 {
 		return nil, errors.New("invalid GetChipTypes response")
 	}
-	chipTypes = d[2:]
+	chipTypes = resp.Data[2:]
 	return chipTypes, nil
 }
 
@@ -87,7 +86,7 @@ func (t *Client) ReadMemoryByAddress(ctx context.Context, address uint32) ([]byt
 	if err != nil {
 		return nil, fmt.Errorf("failed to read memory by address: %v", err)
 	}
-	data := resp.Data()[2:]
+	data := resp.Data[2:]
 	reverse(data)
 	return data, nil
 }

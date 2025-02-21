@@ -153,15 +153,14 @@ func (t *Client) UploadBootLoader(ctx context.Context) error {
 				if err != nil {
 					return err
 				}
-				data := resp.Data()
-				if data[0] == 0x1C && data[1] == 0x01 && data[2] == 0x00 {
+				if resp.Data[0] == 0x1C && resp.Data[1] == 0x01 && resp.Data[2] == 0x00 {
 					t.cfg.OnMessage("Bootloader already running")
 					t.bootloaded = true
 					return nil
 				}
 
-				if resp.Length() != 8 || data[0] != byte(frameNo*7) || data[1] != 0x00 {
-					return fmt.Errorf("failed to upload bootloader: %X", data)
+				if resp.Length() != 8 || resp.Data[0] != byte(frameNo*7) || resp.Data[1] != 0x00 {
+					return fmt.Errorf("failed to upload bootloader: %X", resp.Data)
 				}
 				t.cfg.OnProgress(progress)
 				seq += 7
@@ -190,8 +189,7 @@ func (t *Client) sendBootloaderAddressCommand(ctx context.Context, address uint3
 	if err != nil {
 		return fmt.Errorf("failed to sendBootloaderAddressCommand: %v", err)
 	}
-	data := f.Data()
-	if f.Length() != 8 || data[0] != 0xA5 || data[1] != 0x00 {
+	if f.Length() != 8 || f.Data[0] != 0xA5 || f.Data[1] != 0x00 {
 		return fmt.Errorf("invalid response to sendBootloaderAddressCommand")
 	}
 	return nil
@@ -208,7 +206,7 @@ func (t *Client) sendBootloaderDataCommand(ctx context.Context, data []byte, len
 	if err != nil {
 		return fmt.Errorf("failed SBLDC: %v", err)
 	}
-	if resp.Data()[1] != 0x00 {
+	if resp.Data[1] != 0x00 {
 		return errors.New("failed to write")
 	}
 	return nil

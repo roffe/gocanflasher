@@ -59,8 +59,7 @@ func (t *Client) DataInitialization(ctx context.Context) error {
 			if err != nil {
 				return fmt.Errorf("%v", err)
 			}
-			d := resp.Data()
-			if !bytes.Equal(d, []byte{0x40, 0xBF, 0x21, 0xC1, 0x00, 0x11, 0x02, 0x58}) {
+			if !bytes.Equal(resp.Data, []byte{0x40, 0xBF, 0x21, 0xC1, 0x00, 0x11, 0x02, 0x58}) {
 				return fmt.Errorf("/!\\ Invalid data initialization response")
 			}
 
@@ -109,14 +108,13 @@ func (t *Client) GetHeader(ctx context.Context, id byte) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		d := f.Data()
-		if d[0]&0x40 == 0x40 {
-			if int(d[2]) > 2 {
-				length = int(d[2]) - 2
+		if f.Data[0]&0x40 == 0x40 {
+			if int(f.Data[2]) > 2 {
+				length = int(f.Data[2]) - 2
 			}
 			for b := 5; b < 8; b++ {
 				if length > 0 {
-					answer = append(answer, d[b])
+					answer = append(answer, f.Data[b])
 				}
 				length--
 			}
@@ -125,16 +123,16 @@ func (t *Client) GetHeader(ctx context.Context, id byte) (string, error) {
 				if length == 0 {
 					break
 				}
-				answer = append(answer, d[2+c])
+				answer = append(answer, f.Data[2+c])
 				length--
 			}
 		}
 
-		if d[0] == 0x80 || d[0] == 0xC0 {
-			t.Ack(d[0], gocan.Outgoing)
+		if f.Data[0] == 0x80 || f.Data[0] == 0xC0 {
+			t.Ack(f.Data[0], gocan.Outgoing)
 			break
 		} else {
-			t.Ack(d[0], gocan.ResponseRequired)
+			t.Ack(f.Data[0], gocan.ResponseRequired)
 		}
 	}
 
@@ -170,10 +168,9 @@ func (t *Client) letMeIn(ctx context.Context, method int) (bool, error) {
 		return false, fmt.Errorf("request seed: %v", err)
 
 	}
-	d := f.Data()
-	t.Ack(d[0], gocan.ResponseRequired)
+	t.Ack(f.Data[0], gocan.ResponseRequired)
 
-	s := int(d[5])<<8 | int(d[6])
+	s := int(f.Data[5])<<8 | int(f.Data[6])
 	k := calcen(s, method)
 
 	msgReply[5] = byte(int(k) >> 8 & int(0xFF))
@@ -184,9 +181,8 @@ func (t *Client) letMeIn(ctx context.Context, method int) (bool, error) {
 		return false, fmt.Errorf("send seed: %v", err)
 
 	}
-	d2 := f2.Data()
-	t.Ack(d2[0], gocan.ResponseRequired)
-	if d2[3] == 0x67 && d2[5] == 0x34 {
+	t.Ack(f2.Data[0], gocan.ResponseRequired)
+	if f2.Data[3] == 0x67 && f2.Data[5] == 0x34 {
 		return true, nil
 	} else {
 		log.Println(f2.String())
@@ -228,10 +224,9 @@ func (t *Client) LetMeTry(ctx context.Context, key1, key2 int) bool {
 		return false
 
 	}
-	d := f.Data()
-	t.Ack(d[0], gocan.ResponseRequired)
+	t.Ack(f.Data[0], gocan.ResponseRequired)
 
-	s := int(d[5])<<8 | int(d[6])
+	s := int(f.Data[5])<<8 | int(f.Data[6])
 	k := calcenCustom(s, key1, key2)
 
 	msgReply[5] = byte(int(k) >> 8 & int(0xFF))
@@ -243,9 +238,10 @@ func (t *Client) LetMeTry(ctx context.Context, key1, key2 int) bool {
 		return false
 
 	}
-	d2 := f2.Data()
-	t.Ack(d2[0], gocan.ResponseRequired)
-	if d2[3] == 0x67 && d2[5] == 0x34 {
+
+	t.Ack(f2.Data[0], gocan.ResponseRequired)
+
+	if f2.Data[3] == 0x67 && f2.Data[5] == 0x34 {
 		return true
 	} else {
 		return false

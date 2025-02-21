@@ -114,8 +114,8 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 			progress += n
 			f := gocan.NewFrame(t.canID, payload, gocan.Outgoing)
 			if j == 0x21 {
-				f.SetTimeout(t.defaultTimeout * 4)
-				f.SetType(gocan.ResponseRequired)
+				f.Timeout = t.defaultTimeout * 4
+				f.FrameType = gocan.ResponseRequired
 			}
 			if err := t.c.Send(f); err != nil {
 				return err
@@ -134,8 +134,7 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 			log.Println(resp.String())
 			return err
 		}
-		d := resp.Data()
-		if d[0] != 0x01 || d[1] != 0x76 {
+		if resp.Data[0] != 0x01 || resp.Data[1] != 0x76 {
 			return errors.New("invalid transfer data response")
 		}
 		startAddress += 0xEA
@@ -160,8 +159,7 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 		return err
 	}
 
-	d := resp.Data()
-	if d[0] != 0x01 || d[1] != 0x76 {
+	if resp.Data[0] != 0x01 || resp.Data[1] != 0x76 {
 		return errors.New("invalid transfer data response")
 	}
 	t.gm.TesterPresentNoResponseAllowed()
@@ -180,8 +178,7 @@ func (t *Client) Ping(ctx context.Context) error {
 	if err != nil {
 		return errors.New("LegionPing: " + err.Error())
 	}
-	d := resp.Data()
-	if d[0] == 0xDE && d[1] == 0xAD { //&& d[2] == 0xF0 && d[3] == 0x0F {
+	if resp.Data[0] == 0xDE && resp.Data[1] == 0xAD { //&& d[2] == 0xF0 && d[3] == 0x0F {
 		return nil
 	}
 	if err := gmlan.CheckErr(resp); err != nil {
@@ -199,8 +196,8 @@ func (t *Client) Exit(ctx context.Context) error {
 	if err != nil {
 		return errors.New("LegionExit: " + err.Error())
 	}
-	d := resp.Data()
-	if d[0] == 0x01 && d[1] == 0x60 {
+
+	if resp.Data[0] == 0x01 && resp.Data[1] == 0x60 {
 		return nil
 	}
 
@@ -208,7 +205,7 @@ func (t *Client) Exit(ctx context.Context) error {
 		return errors.New("LegionExit: " + err.Error())
 	}
 
-	return fmt.Errorf("LegionExit: invalid response %X", d)
+	return fmt.Errorf("LegionExit: invalid response %X", resp.Data)
 }
 
 // Set inter frame latency
@@ -294,9 +291,8 @@ func (t *Client) IDemand(ctx context.Context, command Command, wish uint16) ([]b
 		if err != nil {
 			return fmt.Errorf("IDemand: %w", err)
 		}
-		d := resp.Data()
 
-		if err := demandErr(command, d); err != nil {
+		if err := demandErr(command, resp.Data); err != nil {
 			return err
 		}
 
@@ -308,7 +304,7 @@ func (t *Client) IDemand(ctx context.Context, command Command, wish uint16) ([]b
 		case 1:
 			// Crc-32; complete
 			//log.Println("crc-32 complete")
-			out = d[4:]
+			out = resp.Data[4:]
 			return nil
 		case 2, 3:
 			// md5; complete
@@ -329,7 +325,7 @@ func (t *Client) IDemand(ctx context.Context, command Command, wish uint16) ([]b
 			return nil
 		case 6:
 			// ADC-read; complete
-			out = d[4:5]
+			out = resp.Data[4:5]
 			return nil
 		default:
 			return retry.Unrecoverable(errors.New("command unknown to the legion"))
@@ -488,18 +484,17 @@ func demandErr(command Command, d []byte) error {
 	return nil
 }
 
-func checkErr(f gocan.CANFrame) error {
-	d := f.Data()
+func checkErr(f *gocan.CANFrame) error {
 	switch {
-	case d[0] == 0x7E:
+	case f.Data[0] == 0x7E:
 		return errors.New("got 0x7E message as response to 0x21, ReadDataByLocalIdentifier command")
-	case bytes.Equal(d, []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}):
+	case bytes.Equal(f.Data, []byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}):
 		return errors.New("got blank response message to 0x21, ReadDataByLocalIdentifier")
-	case d[0] == 0x03 && d[1] == 0x7F && d[2] == 0x23:
+	case f.Data[0] == 0x03 && f.Data[1] == 0x7F && f.Data[2] == 0x23:
 		return errors.New("no security access granted")
-	case d[2] != 0x61 && d[1] != 0x61:
-		if bytes.Equal(d, []byte{0x01, 0x7E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) {
-			return fmt.Errorf("incorrect response to 0x21, sendReadDataByLocalIdentifier.  Byte 2 was %X", d[2])
+	case f.Data[2] != 0x61 && f.Data[1] != 0x61:
+		if bytes.Equal(f.Data, []byte{0x01, 0x7E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}) {
+			return fmt.Errorf("incorrect response to 0x21, sendReadDataByLocalIdentifier.  Byte 2 was %X", f.Data[2])
 		}
 	}
 	return nil
@@ -519,8 +514,6 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 	}
 
 	rx_cnt := 0
-	d := resp.Data()
-
 	if length <= 4 {
 		//for i := 4; i < int(4+length); i++ {
 		//	if int(length) > rx_cnt {
@@ -528,15 +521,15 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 		//		rx_cnt++
 		//	}
 		//}
-		copy(retData, d[4:4+length])
+		copy(retData, resp.Data[4:4+length])
 		rx_cnt += int(length)
 		return retData, 0, nil
 	}
-	copy(retData, d[4:])
+	copy(retData, resp.Data[4:])
 	rx_cnt += 4
 
 	var seq byte = 0x21
-	if !legionMode || d[3] == 0x00 {
+	if !legionMode || resp.Data[3] == 0x00 {
 		sub := t.c.Subscribe(ctx, t.recvID...)
 		defer sub.Close()
 		if err := t.c.SendFrame(t.canID, []byte{0x30}, gocan.CANFrameType{Type: 2, Responses: 18}); err != nil {
@@ -551,9 +544,8 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 			case <-ctx.Done():
 				return nil, 0, ctx.Err()
 			case resp := <-sub.Chan():
-				d2 := resp.Data()
-				if d2[0] != seq {
-					return nil, 0, fmt.Errorf("received invalid sequenced frame 0x%02X, expected 0x%02X", d2[0], seq)
+				if resp.Data[0] != seq {
+					return nil, 0, fmt.Errorf("received invalid sequenced frame 0x%02X, expected 0x%02X", resp.Data[0], seq)
 				}
 				//for i := 1; i < resp.Length(); i++ {
 				//	if rx_cnt < int(length) {
@@ -561,7 +553,7 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 				//		rx_cnt++
 				//	}
 				//}
-				copy(retData[rx_cnt:], d2[1:resp.Length()])
+				copy(retData[rx_cnt:], resp.Data[1:resp.Length()])
 				rx_cnt += resp.Length() - 1
 				seq++
 				m_nrFrameToReceive--
@@ -580,7 +572,7 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 		for j := 1; j < len(retData); j *= 2 {
 			copy(retData[j:], retData[:j])
 		}
-		return retData, int(d[3]), nil
+		return retData, int(resp.Data[3]), nil
 	}
 
 	return retData, 0, nil

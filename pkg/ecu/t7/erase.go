@@ -27,13 +27,11 @@ func (t *Client) EraseECU(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		data = f.Data()
+		data = f.Data
 		t.Ack(data[0], gocan.Outgoing)
 		i++
 		progress++
-
 		t.cfg.OnProgress(float64(progress))
-
 		time.Sleep(250 * time.Millisecond)
 	}
 	if i > 10 {
@@ -49,7 +47,7 @@ func (t *Client) EraseECU(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		data = f.Data()
+		data = f.Data
 		t.Ack(data[0], gocan.Outgoing)
 		i++
 		progress++
@@ -69,7 +67,7 @@ func (t *Client) EraseECU(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		data = f.Data()
+		data = f.Data
 		i++
 		progress++
 

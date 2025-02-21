@@ -18,9 +18,7 @@ func (t *Client) Ping(ctx context.Context) error {
 	if err != nil {
 		return errors.New("LegionPing: " + err.Error())
 	}
-
-	d := resp.Data()
-	if d[0] == 0xDE && d[1] == 0xAD && d[2] == 0xF0 && d[3] == 0x0F {
+	if resp.Data[0] == 0xDE && resp.Data[1] == 0xAD && resp.Data[2] == 0xF0 && resp.Data[3] == 0x0F {
 		return nil
 	}
 	return errors.New("LegionPing: no response")
@@ -67,8 +65,7 @@ func (t *Client) UploadBootLoader(ctx context.Context) error {
 			if err != nil {
 				return fmt.Errorf("failed to sendBootloaderAddressCommand: %v", err)
 			}
-			data := f.Data()
-			if f.Length() != 8 || data[0] != 0xA5 || data[1] != 0x00 {
+			if f.Length() != 8 || f.Data[0] != 0xA5 || f.Data[1] != 0x00 {
 				return fmt.Errorf("invalid response to sendBootloaderAddressCommand")
 			}
 		case 0xC1:
@@ -81,9 +78,8 @@ func (t *Client) UploadBootLoader(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			d := f.Data()
-			if d[0] != 0x0E || d[1] != 0x00 {
-				return fmt.Errorf("invalid response to sendBootloaderDataCommand: %X", d)
+			if f.Data[0] != 0x0E || f.Data[1] != 0x00 {
+				return fmt.Errorf("invalid response to sendBootloaderDataCommand: %X", f.Data)
 			}
 		default:
 			resp, err := t.c.SendAndWait(
@@ -95,15 +91,14 @@ func (t *Client) UploadBootLoader(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			data := resp.Data()
-			if data[0] == 0x1C && data[1] == 0x01 && data[2] == 0x00 {
+			if resp.Data[0] == 0x1C && resp.Data[1] == 0x01 && resp.Data[2] == 0x00 {
 				t.cfg.OnMessage("Bootloader already running")
 				t.bootloaded = true
 				return nil
 			}
 
-			if resp.Length() != 8 || data[1] != 0x00 {
-				return fmt.Errorf("failed to upload bootloader: %X", data)
+			if resp.Length() != 8 || resp.Data[1] != 0x00 {
+				return fmt.Errorf("failed to upload bootloader: %X", resp.Data)
 			}
 		}
 
@@ -126,21 +121,20 @@ func (t *Client) readDataByLocalIdentifier(ctx context.Context, pci byte, addres
 	}
 	//log.Println(resp.(*gocan.Frame).ColorString())
 
-	d := resp.Data()
-	if d[0] == 0x7E {
+	if resp.Data[0] == 0x7E {
 		return nil, 0, errors.New("got 0x7E message as response to 0x21, ReadDataByLocalIdentifier command")
 	}
 
-	if d[3] > 0 {
+	if resp.Data[3] > 0 {
 		retData[0] = 0xFF
 		for j := 1; j < len(retData); j *= 2 {
 			copy(retData[j:], retData[:j])
 		}
-		return retData, int(d[3]), nil
+		return retData, int(resp.Data[3]), nil
 	}
 
 	rx_cnt := 0
-	copy(retData, d[4:])
+	copy(retData, resp.Data[4:])
 	rx_cnt += 4
 
 	sub := t.c.Subscribe(ctx, 0x0C)
@@ -154,10 +148,10 @@ func (t *Client) readDataByLocalIdentifier(ctx context.Context, pci byte, addres
 	for rx_cnt < int(length) {
 		select {
 		case resp := <-sub.Chan():
-			if resp.Data()[0] != seq {
-				return nil, 0, fmt.Errorf("got unexpected sequence number %02X, expected %02X", resp.Data()[0], seq)
+			if resp.Data[0] != seq {
+				return nil, 0, fmt.Errorf("got unexpected sequence number %02X, expected %02X", resp.Data[0], seq)
 			}
-			copy(retData[rx_cnt:], resp.Data()[1:])
+			copy(retData[rx_cnt:], resp.Data[1:])
 			rx_cnt += 7
 			seq++
 			if seq > 0x2F {
@@ -183,8 +177,7 @@ func (t *Client) sendBootloaderAddressCommand(ctx context.Context, address uint3
 	if err != nil {
 		return fmt.Errorf("failed to sendBootloaderAddressCommand: %v", err)
 	}
-	data := f.Data()
-	if f.Length() != 8 || data[0] != 0xA5 || data[1] != 0x00 {
+	if f.Length() != 8 || f.Data[0] != 0xA5 || f.Data[1] != 0x00 {
 		return fmt.Errorf("invalid response to sendBootloaderAddressCommand")
 	}
 	return nil
@@ -203,7 +196,7 @@ func (t *Client) sendBootloaderDataCommand(ctx context.Context, data []byte, len
 	if err != nil {
 		return fmt.Errorf("failed SBLDC: %v", err)
 	}
-	if resp.Data()[1] != 0x00 {
+	if resp.Data[1] != 0x00 {
 		return errors.New("failed to write")
 	}
 	return nil
@@ -272,8 +265,7 @@ func (t *Client) IDemand(ctx context.Context, command Command, wish uint16) ([]b
 		if err != nil {
 			return err
 		}
-		d := resp.Data()
-		if err := demandErr(command, d); err != nil {
+		if err := demandErr(command, resp.Data); err != nil {
 			return err
 		}
 		switch command {
@@ -284,7 +276,7 @@ func (t *Client) IDemand(ctx context.Context, command Command, wish uint16) ([]b
 		case 1:
 			// Crc-32; complete
 			//log.Println("crc-32 complete")
-			out = d[4:]
+			out = resp.Data[4:]
 			return nil
 		case 2, 3:
 			// md5; complete
@@ -301,7 +293,7 @@ func (t *Client) IDemand(ctx context.Context, command Command, wish uint16) ([]b
 			return nil
 		case 6:
 			// Retrieve system information
-			out = d[4:]
+			out = resp.Data[4:]
 			return nil
 		default:
 			return retry.Unrecoverable(errors.New("command unknown to the legion"))

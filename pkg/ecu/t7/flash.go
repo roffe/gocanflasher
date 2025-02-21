@@ -122,10 +122,9 @@ func (t *Client) FlashECU(ctx context.Context, bin []byte) error {
 		return fmt.Errorf("error waiting for data transfer exit reply: %v", err)
 	}
 	// Send acknowledgement
-	d := end.Data()
-	t.Ack(d[0], gocan.Outgoing)
+	t.Ack(end.Data[0], gocan.Outgoing)
 
-	if d[3] != 0x77 {
+	if end.Data[3] != 0x77 {
 		return errors.New("exit download mode failed")
 	}
 
@@ -151,10 +150,9 @@ func (t *Client) writeJump(ctx context.Context, offset, length int) error {
 		return fmt.Errorf("failed to enable request download #2")
 	}
 
-	d := f.Data()
-	t.Ack(d[0], gocan.Outgoing)
+	t.Ack(f.Data[0], gocan.Outgoing)
 
-	if d[3] != 0x74 {
+	if f.Data[3] != 0x74 {
 		log.Println(f.String())
 		return fmt.Errorf("invalid response enabling download mode")
 	}
@@ -221,10 +219,9 @@ func (t *Client) writeRange(ctx context.Context, start, end int, bin []byte) err
 	}
 
 	// Send acknowledgement
-	d := resp.Data()
-	t.Ack(d[0], gocan.Outgoing)
+	t.Ack(resp.Data[0], gocan.Outgoing)
 
-	if d[3] != 0x76 {
+	if resp.Data[3] != 0x76 {
 		return fmt.Errorf("ECU did not confirm write")
 	}
 	return nil

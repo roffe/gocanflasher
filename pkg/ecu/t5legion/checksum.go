@@ -23,8 +23,7 @@ func (t *Client) GetECUChecksum(ctx context.Context) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get ECU checksum: %v", err)
 	}
-	data := resp.Data()[2:6]
-	return data, nil
+	return resp.Data[2:6], nil
 }
 
 func (t *Client) CalculateBinChecksum(bin []byte) ([]byte, error) {

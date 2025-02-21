@@ -1,5 +1,7 @@
 module github.com/roffe/gocanflasher
 
+replace github.com/roffe/gocan => ../gocan
+
 go 1.24.0
 
 require (

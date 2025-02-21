@@ -21,8 +21,7 @@ func (t *Client) ResetECU(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to reset ECU: %v", err)
 	}
-	data := resp.Data()
-	if data[0] != 0xC2 || data[1] != 0x00 || data[2] != 0x08 {
+	if resp.Data[0] != 0xC2 || resp.Data[1] != 0x00 || resp.Data[2] != 0x08 {
 		return errors.New("invalid response to reset ECU")
 	}
 	t.cfg.OnMessage("ECU has been reset")

@@ -18,12 +18,11 @@ func (t *Client) ResetECU(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	d := f.Data()
-	if d[3] == 0x7F {
-		return fmt.Errorf("failed to reset ECU: %s", TranslateErrorCode(d[5]))
+	if f.Data[3] == 0x7F {
+		return fmt.Errorf("failed to reset ECU: %s", TranslateErrorCode(f.Data[5]))
 	}
-	if d[3] != 0x51 || d[4] != 0x81 {
-		return fmt.Errorf("abnormal ecu reset response: %X", d[3:])
+	if f.Data[3] != 0x51 || f.Data[4] != 0x81 {
+		return fmt.Errorf("abnormal ecu reset response: %X", f.Data[3:])
 	}
 	return nil
 }
