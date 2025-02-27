@@ -240,7 +240,7 @@ func (t *Client) RequestECUInfo(ctx context.Context, pid byte) ([]byte, error) {
 }
 
 func (t *Client) SendAckMessageT8() {
-	if err := t.c.SendFrame(0x7E0, []byte{0x30}, gocan.Outgoing); err != nil {
+	if err := t.c.Send(0x7E0, []byte{0x30}, gocan.Outgoing); err != nil {
 		panic(err)
 	}
 }

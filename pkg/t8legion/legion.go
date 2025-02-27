@@ -117,7 +117,7 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 				f.Timeout = t.defaultTimeout * 4
 				f.FrameType = gocan.ResponseRequired
 			}
-			if err := t.c.Send(f); err != nil {
+			if err := t.c.SendFrame(f); err != nil {
 				return err
 			}
 			seq++
@@ -532,7 +532,7 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 	if !legionMode || resp.Data[3] == 0x00 {
 		sub := t.c.Subscribe(ctx, t.recvID...)
 		defer sub.Close()
-		if err := t.c.SendFrame(t.canID, []byte{0x30}, gocan.CANFrameType{Type: 2, Responses: 18}); err != nil {
+		if err := t.c.Send(t.canID, []byte{0x30}, gocan.CANFrameType{Type: 2, Responses: 18}); err != nil {
 			return nil, 0, err
 		}
 		var m_nrFrameToReceive = int((length - 4) / 7)

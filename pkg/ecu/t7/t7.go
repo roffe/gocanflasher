@@ -39,8 +39,7 @@ func New(c *gocan.Client, cfg *ecu.Config) ecu.Client {
 
 // 266h Send acknowledgement, has 0x3F on 3rd!
 func (t *Client) Ack(val byte, typ gocan.CANFrameType) error {
-	ack := []byte{0x40, 0xA1, 0x3F, val & 0xBF, 0x00, 0x00, 0x00, 0x00}
-	return t.c.Send(gocan.NewFrame(0x266, ack, typ))
+	return t.c.Send(0x266, []byte{0x40, 0xA1, 0x3F, val & 0xBF, 0x00, 0x00, 0x00, 0x00}, typ)
 }
 
 var lastDataInitialization time.Time
@@ -86,7 +85,7 @@ func (t *Client) DataInitialization(ctx context.Context) error {
 func (t *Client) GetHeader(ctx context.Context, id byte) (string, error) {
 	err := retry.Do(
 		func() error {
-			return t.c.SendFrame(0x240, []byte{0x40, 0xA1, 0x02, 0x1A, id, 0x00, 0x00, 0x00}, gocan.ResponseRequired)
+			return t.c.Send(0x240, []byte{0x40, 0xA1, 0x02, 0x1A, id, 0x00, 0x00, 0x00}, gocan.ResponseRequired)
 		},
 		retry.Context(ctx),
 		retry.Attempts(3),
@@ -258,7 +257,5 @@ func calcenCustom(seed int, key1, key2 int) int {
 }
 
 func (t *Client) StopSession(ctx context.Context) error {
-	payload := []byte{0x40, 0xA1, 0x02, 0x82, 0x00, 0x00, 0x00, 0x00}
-	frame := gocan.NewFrame(0x220, payload, gocan.ResponseRequired)
-	return t.c.Send(frame)
+	return t.c.Send(0x220, []byte{0x40, 0xA1, 0x02, 0x82, 0x00, 0x00, 0x00, 0x00}, gocan.ResponseRequired)
 }

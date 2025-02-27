@@ -77,7 +77,7 @@ func (t *Client) readECU(ctx context.Context, addr, length int) ([]byte, error) 
 
 func (t *Client) readMemoryByAddress(ctx context.Context, address, length int) ([]byte, error) {
 	// Jump to read adress
-	t.c.SendFrame(0x240, []byte{0x41, 0xA1, 0x08, 0x2C, 0xF0, 0x03, 0x00, byte(length)}, gocan.Outgoing)
+	t.c.Send(0x240, []byte{0x41, 0xA1, 0x08, 0x2C, 0xF0, 0x03, 0x00, byte(length)}, gocan.Outgoing)
 	frame := gocan.NewFrame(0x240, []byte{0x00, 0xA1, byte((address >> 16) & 0xFF), byte((address >> 8) & 0xFF), byte(address & 0xFF), 0x00, 0x00, 0x00}, gocan.ResponseRequired)
 	f, err := t.c.SendAndWait(ctx, frame, t.defaultTimeout*3, 0x258)
 	if err != nil {
@@ -101,8 +101,7 @@ func (t *Client) recvData(ctx context.Context, length int) ([]byte, error) {
 	sub := t.c.Subscribe(ctx, 0x258)
 	defer sub.Close()
 
-	startTransfer := gocan.NewFrame(0x240, []byte{0x40, 0xA1, 0x02, 0x21, 0xF0, 0x00, 0x00, 0x00}, gocan.ResponseRequired)
-	if err := t.c.Send(startTransfer); err != nil {
+	if err := t.c.Send(0x240, []byte{0x40, 0xA1, 0x02, 0x21, 0xF0, 0x00, 0x00, 0x00}, gocan.ResponseRequired); err != nil {
 		return nil, err
 	}
 

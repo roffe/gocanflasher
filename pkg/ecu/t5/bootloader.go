@@ -197,7 +197,7 @@ func (t *Client) sendBootloaderAddressCommand(ctx context.Context, address uint3
 
 func (t *Client) sendBootVectorAddressSRAM(address uint32) error {
 	data := []byte{0xC1, byte(address >> 24), byte(address >> 16), byte(address >> 8), byte(address), 0x00, 0x00, 0x00}
-	return t.c.SendFrame(0x5, data, gocan.Outgoing)
+	return t.c.Send(0x5, data, gocan.Outgoing)
 }
 
 func (t *Client) sendBootloaderDataCommand(ctx context.Context, data []byte, length byte) error {

@@ -140,7 +140,7 @@ func (t *Client) readDataByLocalIdentifier(ctx context.Context, pci byte, addres
 	sub := t.c.Subscribe(ctx, 0x0C)
 	defer sub.Close()
 
-	if err := t.c.SendFrame(0x05, []byte{0x30}, gocan.CANFrameType{Type: 2, Responses: 19}); err != nil {
+	if err := t.c.Send(0x05, []byte{0x30}, gocan.CANFrameType{Type: 2, Responses: 19}); err != nil {
 		return nil, 0, err
 	}
 

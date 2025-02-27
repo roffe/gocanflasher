@@ -140,7 +140,7 @@ func (t *Client) writeJump(ctx context.Context, offset, length int) error {
 
 	log.Printf("writeJump: offset=%d, length=%d", offset, length)
 	log.Printf("writeJump: jumpMsg=%X", jumpMsg)
-	if err := t.c.SendFrame(0x240, jumpMsg, gocan.Outgoing); err != nil {
+	if err := t.c.Send(0x240, jumpMsg, gocan.Outgoing); err != nil {
 		return fmt.Errorf("failed to enable request download #1")
 	}
 	log.Printf("writeJump: jumpMsg2=%X", jumpMsg2)
@@ -205,12 +205,12 @@ func (t *Client) writeRange(ctx context.Context, start, end int, bin []byte) err
 			}
 		}
 		if i > 0 {
-			t.c.SendFrame(0x240, data, gocan.Outgoing)
+			t.c.Send(0x240, data, gocan.Outgoing)
 			for i := 0; i < 1000; i++ {
 			}
 			continue
 		}
-		t.c.SendFrame(0x240, data, gocan.ResponseRequired)
+		t.c.Send(0x240, data, gocan.ResponseRequired)
 	}
 
 	resp, err := t.c.Wait(ctx, t.defaultTimeout, 0x258)
