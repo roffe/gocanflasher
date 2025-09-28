@@ -6,7 +6,7 @@ go 1.24.0
 
 require (
 	github.com/avast/retry-go/v4 v4.6.0
-	github.com/roffe/gocan v1.1.0
+	github.com/roffe/gocan v1.1.7
 )
 
 require (
@@ -22,9 +22,9 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mdlayher/netlink v1.7.2 // indirect
 	github.com/mdlayher/socket v0.5.1 // indirect
-	github.com/roffe/gocanusb v1.1.1 // indirect
-	github.com/roffe/goftdi v0.0.0-20250227120900-5e1895d2a9af // indirect
-	go.bug.st/serial v1.6.2 // indirect
+	github.com/roffe/gocanusb v1.1.2 // indirect
+	github.com/roffe/goftdi v0.0.0-20250330120219-31feb988cb73 // indirect
+	go.bug.st/serial v1.6.4 // indirect
 	go.einride.tech/can v0.12.1 // indirect
 	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
