@@ -114,7 +114,7 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 			progress += n
 			f := gocan.NewFrame(t.canID, payload, gocan.Outgoing)
 			if j == 0x21 {
-				f.Timeout = t.defaultTimeout * 4
+				f.Timeout = uint32(t.defaultTimeout * 4)
 				f.FrameType = gocan.ResponseRequired
 			}
 			if err := t.c.SendFrame(f); err != nil {
