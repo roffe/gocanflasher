@@ -103,7 +103,7 @@ func (t *Client) GetHeader(ctx context.Context, id byte) (string, error) {
 	var answer []byte
 	var length int
 	for i := 0; i < 10; i++ {
-		f, err := t.c.Wait(ctx, t.defaultTimeout, 0x258)
+		f, err := t.c.Recv(ctx, t.defaultTimeout, 0x258)
 		if err != nil {
 			return "", err
 		}

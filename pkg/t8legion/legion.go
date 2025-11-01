@@ -126,7 +126,7 @@ func (t *Client) UploadBootloader(ctx context.Context) error {
 			}
 			t.cfg.OnProgress(float64(progress))
 		}
-		resp, err := t.c.Wait(ctx, t.defaultTimeout*2, t.recvID...)
+		resp, err := t.c.Recv(ctx, t.defaultTimeout*2, t.recvID...)
 		if err != nil {
 			return err
 		}

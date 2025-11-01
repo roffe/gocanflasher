@@ -213,7 +213,7 @@ func (t *Client) writeRange(ctx context.Context, start, end int, bin []byte) err
 		t.c.Send(0x240, data, gocan.ResponseRequired)
 	}
 
-	resp, err := t.c.Wait(ctx, t.defaultTimeout, 0x258)
+	resp, err := t.c.Recv(ctx, t.defaultTimeout, 0x258)
 	if err != nil {
 		return fmt.Errorf("error writing 0x%X - 0x%X was at pos 0x%X: %v", start, end, binPos, err)
 	}
