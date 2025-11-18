@@ -55,6 +55,8 @@ func New(c *gocan.Client, cfg *ecu.Config, canID uint32, recvID ...uint32) *Clie
 		ifl = 10
 	case strings.HasPrefix(lower, "canlib"):
 		ifl = 10
+	case strings.HasPrefix(lower, "slcan"):
+		ifl = 10
 	}
 	cfg.OnMessage("Using interframe latency " + strconv.Itoa(int(ifl)) + " for " + c.Adapter().Name())
 
@@ -553,8 +555,9 @@ func (t *Client) ReadDataByLocalIdentifier(ctx context.Context, legionMode bool,
 				//		rx_cnt++
 				//	}
 				//}
-				copy(retData[rx_cnt:], resp.Data[1:resp.Length()])
-				rx_cnt += resp.Length() - 1
+				dlc := resp.DLC()
+				copy(retData[rx_cnt:], resp.Data[1:dlc])
+				rx_cnt += dlc - 1
 				seq++
 				m_nrFrameToReceive--
 				if seq > 0x2F {

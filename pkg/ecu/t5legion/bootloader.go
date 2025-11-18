@@ -65,7 +65,7 @@ func (t *Client) UploadBootLoader(ctx context.Context) error {
 			if err != nil {
 				return fmt.Errorf("failed to sendBootloaderAddressCommand: %v", err)
 			}
-			if f.Length() != 8 || f.Data[0] != 0xA5 || f.Data[1] != 0x00 {
+			if f.DLC() != 8 || f.Data[0] != 0xA5 || f.Data[1] != 0x00 {
 				return fmt.Errorf("invalid response to sendBootloaderAddressCommand")
 			}
 		case 0xC1:
@@ -97,7 +97,7 @@ func (t *Client) UploadBootLoader(ctx context.Context) error {
 				return nil
 			}
 
-			if resp.Length() != 8 || resp.Data[1] != 0x00 {
+			if resp.DLC() != 8 || resp.Data[1] != 0x00 {
 				return fmt.Errorf("failed to upload bootloader: %X", resp.Data)
 			}
 		}
@@ -177,7 +177,7 @@ func (t *Client) sendBootloaderAddressCommand(ctx context.Context, address uint3
 	if err != nil {
 		return fmt.Errorf("failed to sendBootloaderAddressCommand: %v", err)
 	}
-	if f.Length() != 8 || f.Data[0] != 0xA5 || f.Data[1] != 0x00 {
+	if f.DLC() != 8 || f.Data[0] != 0xA5 || f.Data[1] != 0x00 {
 		return fmt.Errorf("invalid response to sendBootloaderAddressCommand")
 	}
 	return nil
